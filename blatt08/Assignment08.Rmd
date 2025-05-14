@@ -1,0 +1,373 @@
+---
+title: "Assignment08"
+output: html_document
+date: "2023-06-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rtracklayer)
+gtf <- rtracklayer::import('Saccharomyces_cerevisiae.R64-1-1.75.gtf')
+gtf_df=as.data.frame(gtf)
+```
+
+##Task 1: Plotting in ggplot (Focus: aes, lab, scales)
+Goal: understanding the plotting syntax of ggplot
+-> What types of plots are there, what types of aesthetics, and what commands are useful to edit the plots?
+--> Using Huber book Chapter 3 (High Quality Graphics in R)
+
+## Base R plotting (Recap)
+'plot' as the most basic function
+Example:
+```{r echo=TRUE}
+head(DNase) # just an example of an enzyme, which dataframe is already in R --> derades DNA --> can easy plot the concentration vs. density
+
+plot(DNase$conc, DNase$density)
+
+# plot can be customized by e.g. changing plot symbol and axis labels:
+plot(DNase$conc, DNase$density,
+  ylab = attr(DNase, "labels")$y,
+  xlab = paste(attr(DNase, "labels")$x, attr(DNase, "units")$x),
+  pch = 3,
+  col = "blue")
+
+#or use a histohram or a boxplot:
+hist(DNase$density, breaks=25, main="")
+boxplot(density ~ Run, data=DNase)
+```
+
+## ggplot2
+loading the package and redoing the simple plot:
+```{r echo=TRUE}
+library("ggplot2")
+ggplot(DNase, aes(x=conc, y=density))+geom_point()
+#What do all those parts mean ? :
+#first: specified the dataframe (DNase)
+# second: aes (aesthetic) argument: which variables will be mapped to the x- and y-axis
+#third: saying we want to use points: geom_point()
+```
+In the book they used a dataset, that I did not manage to download
+-> let's just use the dataset from last week
+```{r echo=TRUE}
+gapminder_raw <- read.csv("https://raw.githubusercontent.com/resbaz/r-novice-gapminder-files/master/data/gapminder-FiveYearData.csv")
+head(gapminder_raw)
+```
+
+```{r echo=TRUE}
+library(tidyverse)
+```
+
+```{r echo=TRUE}
+# using only the "Americas" in the year 2007
+gapminder_raw %>% filter(continent == "Americas", year=="2007") %>%
+#geom_bar: each data item represented by a bar
+#stat ="identity -> do nothing (otherwise would compute histogram of the data, default state = "count")
+ggplot(aes(x=country, y=lifeExp))+geom_bar(stat="identity")
+```
+adding color und Beschriftung um 90 Grad drehen:
+```{r echo=TRUE}
+gg= gapminder_raw %>% filter(continent == "Americas", year=="2007") %>% ggplot(aes(x=country, y=lifeExp, fill= country)) +geom_bar(stat="identity") + theme(axis.text.x = element_text(angle = 90, hjust =1))
+print(gg)
+```
+
+## Saving figures
+Oben haben wir unseren Plot gg genannt, jetzt speichern wir ihn unter Beispiel.pdf
+der Aufbau ist von R vorgegeben
+```{r echo=TRUE}
+ggplot2::ggsave("Beispiel.pdf", plot=gg)
+```
+
+## The grammar of graphics
+1. one or more datasets,
+
+2. one or more geometric objects that serve as the visual representations of the data, – for instance, points, lines, rectangles, contours,
+
+3. descriptions of how the variables in the data are mapped to visual properties (aesthetics) of the geometric objects, and an associated scale (e. g., linear, logarithmic, rank),
+
+4. one or more coordinate systems,
+
+5. statistical summarization rules,
+
+6. a facet specification, i.e. the use of multiple similar subplots to look at subsets of the same data,
+
+7. optional parameters that affect the layout and rendering, such text size, font and alignment, legend positions
+
+--> a ggplot needs at least one of those parts
+--> 4-7 are optional
+## Visualizing data in 1D
+## Barplots
+```{r echo=TRUE}
+genes <- data.frame(
+  gene = rep(c("GeneA", "GeneB", "GeneC", "GeneD", "GeneE"), each = 20),
+  value = c(rnorm(20, mean = 10), rnorm(20, mean = 20),
+            rnorm(20, mean = 30), rnorm(20, mean = 40),
+            rnorm(20, mean = 50)))
+library("ggplot2")
+#install.packages("Hmisc")
+library("Hmisc")
+ggplot(genes, aes( x = gene, y = value, fill = gene)) +
+  stat_summary(fun = mean, geom = "bar") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar",
+               width = 0.25)
+#mean_cl_normal computes the standard error of the mean
+```
+
+## Boxplots 
+much more informative than barplots
+```{r echo=TRUE}
+p= ggplot(genes, aes(x=gene, y=value, fill=gene))
+p + geom_boxplot()
+#especially for larger datasets -> see if it is right or left skewed
+```
+
+## Dot plots and beeswarm plots
+```{r echo=TRUE}
+p + geom_dotplot(binaxis = "y", binwidth = 1/6,
+       stackdir = "center", stackratio = 0.75,
+       aes(color = gene))
+#install.packages("ggbeeswarm")
+library("ggbeeswarm")
+p + geom_beeswarm(aes(color = gene))
+# often  a lot of overlap in dataset-> with ggbeeswarm- no overlap
+```
+
+##Density plots
+```{r echo=TRUE}
+#ziemlich selbsterklärend - oft sehr praktisch (Vergleiche)
+ggplot(genes, aes(x=value, color=gene)) + geom_density()
+```
+
+## Violin plots
+--> dienen zur besseren Übersicht- von boxplots inspiriert
+--> symmetrische Formen erinnern dann an Geigen
+```{r echo=TRUE}
+p + geom_violin()
+```
+
+## Ridgeline plots
+visualisiren auch density, vor allem bei großen data vorteilhaft(übersichtlicher, klarer Unterschied und Tendenzen zu sehen)
+```{r echo=TRUE}
+#install.packages("ggridges")
+library("ggridges")
+ggplot(genes, aes(x = value, y = gene, fill = gene)) + 
+  geom_density_ridges()
+```
+
+## ECDF plots
+-> empirical cumulative distribution function
+```{r echo=TRUE}
+ggplot(genes, aes( x = value, color = gene)) + stat_ecdf()
+```
++lossless + "Plotting the sorted values against their ranks gives the essential features of the ECDF"
+
+## Visualizing data in 2D: scatterplots 
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + labs(x= "GDP per person", y="life expectancy") + ggtitle("association between gdp per person and life expectancy")
+
+#adjust transparency(alpha value): 
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point(alpha=0.1) + labs(x= "GDP per person", y="life expectancy") + ggtitle("association between gdp per person and life expectancy")
+
+#man könnte auch noch die density veranschaulichen(wie die Abbildung von Bergen zu lesen)
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point(alpha=0.1) + labs(x= "GDP per person", y="life expectancy") + geom_density2d()+ ggtitle("association between gdp per person and life expectancy")
+```
+
+## Visualizing more than two dimensions
+ The geom_point geometric object offers the following aesthetics (beyond x and y):
+fill
+color
+shape
+size
+alpha
+(all already used, alpha previously explained)
+
+## Faceting
+Another way to show additional dimensions of the data is to show multiple plots that result from repeatedly subsetting (or “slicing”) our data based on one (or more) of the variables, so that we can visualize each part separately
+using:
+'facet_grid( . ~lineage)
+
+Another useful function is 'facet_wrap':
+if the faceting variable has too many levels for all the plots to fit in one row or one column, then this function can be used to wrap them into a specified number of columns or rows
+
+## Interactive graphics
+shiny -> web application framework
+ggvis -> extending ggplot2 into realm of interactive graphics(JavaScript)
+plotly ->
+```{r echo=TRUE}
+#install.packages("plotly")
+library("plotly")
+plot_ly(economics, x = ~ date, y = ~ unemploy / pop)
+```
+rgl -> (TRY THAT ONE !!! THAT IS SO COOL)
+```{r echo=TRUE}
+data("volcano")
+volcanoData = list(
+  x = 10 * seq_len(nrow(volcano)),
+  y = 10 * seq_len(ncol(volcano)),
+  z = volcano,
+  col = terrain.colors(500)[cut(volcano, breaks = 500)]
+)
+#install.packages("rgl")
+library("rgl")
+with(volcanoData, persp3d(x, y, z, color = col))
+```
+
+##Color:
+-> did that very often -> will not explain ausführlich
+```{r echo=TRUE}
+pie(rep(1, 8), col=1:8)
+```
+
+## Heatmaps:
+-> powerful way of visualizing large, matrix-like datasets and providing a quick overview of patterns that might be in the data
+```{r echo=TRUE}
+# Sample data for the heatmap
+matrix_data <- matrix(
+  c(1, 2, 3, 4, 5, 6, 7, 8, 9),  # Example values
+  nrow = 3,                       # Number of rows
+  ncol = 3,                       # Number of columns
+  byrow = TRUE                    # Fill the matrix by row
+)
+
+# Create the heatmap
+heatmap(matrix_data)
+```
+
+## Data transformations:
+We already know log and its effect
+Another way: rank() 
+--> shows the relative position to the other values and replaces the original values with their corresponding ranks
+```{r echo=TRUE}
+# Load the required packages
+library(ggplot2)
+library(dplyr)
+
+# Rank-transform the 'lifeExp' variable
+gapminder_raw <- gapminder_raw %>%
+  mutate(rank_lifeExp = rank(lifeExp))
+
+# Create the scatter plot with rank-transformed y-axis
+ggplot(gapminder_raw, aes(x = gdpPercap, y = rank_lifeExp)) +
+  geom_point() +
+  labs(x = "GDP per person", y = "Rank of life expectancy") +
+  ggtitle("Association between GDP per person and life expectancy (Rank Transformation)")
+
+# Zum vergleich:
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + labs(x= "GDP per person", y="life expectancy") + ggtitle("association between gdp per person and life expectancy")
+```
+
+##Summary:
+## Which representation of data frames is used in ggplot (wide or long)? How to convert the other type into the format?
+
+--> preferred format is long format (also known as "tidy" format)
+If your data frame is in the wide format, where each variable is represented by a separate column, you can convert it to the long format using various functions in R, such as "pivot_longer()" from the tidyverse package or "melt()" from the reshape2 package.
+```{r echo=TRUE}
+# Sample wide-format data frame
+wide_df <- data.frame(
+  Month = c("Jan", "Feb", "Mar"),
+  ProductA = c(100, 120, 90),
+  ProductB = c(80, 70, 110),
+  ProductC = c(150, 130, 140)
+)
+print(wide_df)
+# Convert wide-format data frame to long format
+library(tidyverse)
+
+long_df <- wide_df %>%
+  pivot_longer(cols = -Month, names_to = "Product", values_to = "Sales")
+
+# Print the long-format data frame
+print(long_df)
+```
+
+## Add-on: For categorical data, ggplot has a given order for the elements. How do you change it?
+```{r echo=TRUE}
+# Sample data frame with a categorical variable
+df <- data.frame(
+  Category = c("Low", "Medium", "High", "Low", "High"),
+  Value = c(10, 20, 15, 5, 8)
+)
+
+# Define custom order for the Category variable
+custom_order <- c("Medium", "Low", "High")
+df$Category <- factor(df$Category, levels = custom_order)
+
+# Create the plot
+library(ggplot2)
+
+ggplot(df, aes(x = Category, y = Value)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Category", y = "Value") +
+  ggtitle("Custom Order of Categorical Variable")
+```
+
+##Task 2: Deep dive into ggplot (Focus: geom ...)
+b) Workout the pros and cons for every plot. Some points which are of special interest:
+• How many dimensions are involved in the plot (e.g. in long format how many columns, histogram: one, scatterplot: two)?
+• Can you see the whole data or is it summarized in a way?
+• What are dangers in this kind of representation for the data?
+• Give a usecase for every plot (where this plot would fit best).
+
+1. Bar Plot (geom_bar):
+
+Dimensions: two dimensions - one for the categorical variable on the x-axis and another for the corresponding values on the y-axis.
+Data Representation: You can see both the individual values and the summarized values as bars of different heights.
+Dangers: Similar to regular bar plots, the dangers include misleading visualizations if the scale of the y-axis is manipulated or if the bars are distorted in any way.
+Use Case: Bar plots in ggplot are suitable for comparing and visualizing categorical data, showing the distribution of a variable across different groups or categories.
+
+2. Histogram (geom_histogram):
+
+Dimensions: one dimension, representing the distribution.
+Data Representation: Histograms provide a summarized view of the data, showing the frequency or density of values within each bin.
+Dangers: Similar to regular histograms, misrepresentations can occur if the number of bins is chosen poorly, resulting in either over-smoothing or over-detailing the underlying distribution.
+Use Case: Histograms in ggplot are useful for understanding the distribution and shape of continuous or discrete data, identifying patterns, and detecting outliers.
+
+3. Scatter Plot (geom_point):
+
+Dimensions: two dimensions, one for each variable being compared. 
+Data Representation: The entire dataset is visible, and individual points show the relationship between the two variables.
+Dangers: Overplotting can occur if there are too many data points, making it difficult to discern patterns or relationships. Overlapping points may also obscure certain observations.
+Use Case: Scatter plots in ggplot are effective for visualizing the relationship between two continuous variables, identifying trends, clusters, or outliers, and detecting correlations.
+
+4. Line Plot (geom_line):
+
+Dimensions: two dimensions, typically time or another continuous variable on the x-axis and the corresponding variable values on the y-axis.
+Data Representation: Line plots show the trend and progression of the data over time or another continuous variable.
+Dangers: If the data points are not properly connected or if the scale of the y-axis is manipulated, the representation may be misleading.
+Use Case: Line plots in ggplot are ideal for displaying time series data, illustrating trends, changes over time, and comparing multiple trends on the same plot.
+
+5. Pie Chart (geom_bar with coord_polar):
+
+Dimensions: one dimension, representing different categories or groups as different slices of the pie.
+Data Representation: The whole dataset is visible, and the size of each slice represents the proportion or percentage of the whole.
+Dangers: Similar to regular pie charts, the dangers include difficulties in accurately comparing the sizes of different slices or when there are too many categories.
+Use Case: Pie charts in ggplot are useful for displaying proportions and percentages, especially when the number of categories is small and the differences between them are substantial.
+
+
+c) Use the methods on our data.
+
+```{r echo=TRUE}
+# using scatter plot to compare the length of transcript and exon
+library(ggplot2)
+
+ids <- unique(gtf_df$gene_id)
+
+new_df<-NULL
+for(e in 1:7126) rbind(new_df, data.frame(id = ids[e], transcript = gtf_df[gtf_df$gene_id == ids[e]&gtf_df$type == "transcript", 4], exon = gtf_df[gtf_df$gene_id == ids[e]&gtf_df$type == "exon", 4])) -> new_df
+
+head(new_df)
+
+g <- ggplot(new_df, aes(transcript, exon))
+g + geom_point() + 
+  geom_smooth(method="lm", se=F) +
+  labs(subtitle="compare the length of transcript and exon", 
+       y="exon", 
+       x="transcript", 
+       title="Scatterplot with overlapping points")
+
+```
+```{r echo=TRUE}
+# observe the distribution of length density
+a <- ggplot(gtf_df, aes(x = width)) + stat_density()
+a + geom_area(aes(fill = type), stat ="bin", alpha=0.6) +
+  theme_classic()
+```

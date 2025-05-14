@@ -1,0 +1,149 @@
+---
+title: "Assignment06"
+output: html_document
+date: "2023-06-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Task 1: Tidyverse
+
+## Part 1: Getting started w/ readr
+
+## Installation and setup - Cheatsheet
+
+-\> already done in Assignment 01 -\> We all use RStudio ;)
+
+## Loading packages
+
+Install tidyverse and loading packages -\> designed for data science
+gapminder -\> dataset used as an example in data analysis
+
+```{r echo=TRUE}
+install.packages(c("tidyverse", "here", "gapminder"))
+install.packages("readr")
+install.packages("tidyr")
+install.packages("dplyr")
+```
+
+```{r echo=TRUE}
+library(tidyverse)
+```
+
+## Data import
+
+useful tools: -`read_csv`, `write_csv` - `read_tsv`, `write_tsv` -
+`read_delim`, `write_delim` - `here::here`
+
+-\> we already used many of those, so no useless examples :)
+
+## Knowing your data: basic data exploration
+
+Dataset details:
+
+AA: Agilent Adult AF: Agilent Fetus BA: BioChain Adult BF: BioChain
+Fetus OA: Origene Adult
+
+"str()" - shows the structure of the dataframe
+
+"head()" - shows top
+
+"rows" of dataframe
+
+"glimse()"- info-dense summary of the data (!)
+
+"view()" - view data
+
+colnames() , nrows(), ncol() \<- all already known
+
+data[1:5,7:10]- subsetting dataframe
+
+write_tsv(data[1:100,7:12],"data_txt") \<- saves the data file
+
+## Part 2: Resharping data w/ tidyr
+
+TIDY, when each variable has its own column and each observation has its
+own row
+
+## Gather, Spread & Unite, Separate
+
+functions used:
+
+"gather()" -\> gather COLUMNS -\> ROWS
+
+"spread()" -\> spread ROWS-\> COLUMNS
+
+"privot_longer()" -\> gather COLUMNS -\> ROWS
+
+"privot_wider()" -\> spread ROWS -\> COLUMNS
+
+"separate()" -\> separate 1 COLUMN -\> many COLUMNS
+
+"unite()" -\> Unite several COLUMNS -\> 1 COLUMN
+
+gather -\> COLUMNS into ROWS(key-value-pairs): WIDE-\> LONG spread -\>
+ROWS into COLUMNS: LONG -\> WIDE
+
+unite -\> unite multiple columns into one separate -\> separate one
+column into multiple columns
+
+## Part 3: Data wrangling w/dplyr
+
+-\> helpful for basic data wrangling
+
+useful functions:
+
+"filter()" -\> PICK observations by their values \| ROWS
+
+"select()" -\> PICK variables by their names \| COLUMNS
+
+"mutate()" -\> CREATE new variables w/ functions of existing variables
+\| COLUMNS
+
+"transmute()"-\> COMPUTE 1 or more COLUMNS but drop original columns
+
+"arrange()" -\> REORDER the ROWS
+
+"summarize()" -\>COLLAPSE many values to a single SUMMARY
+"group_by()"-\> GROUP data into rows with the same value of
+variable(COLUMN)
+
+"left_join()", "right_join()", "inner_join()", "outer_join()",
+"bind_rows()", "bind_cols()" -\> combining possibilities
+
+## Recap of the functions
+
+Filter -\> return rows with matching conditions
+
+Select -\> select/rename variables/columns by name (e.g. select columns
+that math a specific pattern)
+
+Mutate -\> adds new variables & keeps existing ones
+
+Transmute -\> adds new var, drops existing var
+
+Distinct -\> pick unique entries
+
+Arrange -\> arrange rows by variables (e.g. sort by length)
+
+Summarize -\> reduces multiple values down to a single value
+
+group_b -\> combine entries by one or more variables
+
+## advantages of wide and long dataframe format
+
+WIDE: 
+-easy to understand 
+-compact 
+-quick data exploration
+
+LONG: 
+-\>when one has a sample name and a sample value 
+-flexible for analysis 
+-easier data manipulation 
+-facilitates data visualization
+
+## Task 2: Gather databases
+

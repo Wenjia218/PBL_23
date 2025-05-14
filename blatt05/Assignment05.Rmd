@@ -1,0 +1,124 @@
+---
+title: "Assignment05"
+output: html_document
+date: "2023-05-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+survey<- read.csv("basic_yeast_heatshock.csv", header=TRUE)
+```
+
+## Task 2: Normalization
+
+CPM aka Critial Path Methode- used in project management- refers to the longest stretch of the activities, and a meausure of them from start to finish.
+
+RKPM is suitable for sequencing protocols where reads sequencing depends on gene length- used in single-end RNA-seq experiments.
+
+formulas:
+CPM(feature) = counts(feature) × (library size(sample)/1, 000, 000)
+
+-> library size(sample) = sum(counts(feature)) over all features of the sample
+
+RPKM(feature) = counts(feature)/(length(feature)/1000 ∗ library_size(sample)/1, 000, 000)
+=
+counts(feature)/(length(feature) ∗ library size(sample))× 10^9
+
+## 1. The library size of all samples (histogram)
+
+There are three samples and nine features, three per each sample 
+(looking at the yeast heatshock)
+```{r echo=TRUE}
+head(survey)
+
+#The library size for each sample is the sum of all feature(gene) counts
+
+survey_Numeric <- survey[, -1]
+library_size <- colSums(survey_Numeric)
+hist(library_size, main = "Distribution of library sizes of all 9 samples", xlab = "library sizes")
+
+cat("The library size is the same for raw counts, CPM and RPKM")
+
+
+```
+
+
+
+## 2. Distribution of all features of a single sample(histogram)
+
+```{r echo=TRUE}
+
+library_size_r1<- sum(survey$X25_0_r1, survey$X42_10_r1, survey$X42_30_r1)
+library_size_r2 <- sum(survey$X25_0_r2, survey$X42_10_r2, survey$X42_30_r2)
+library_size_r3 <- sum(survey$X25_0_r3, survey$X42_10_r3, survey$X42_30_r3)
+
+CPM_0_r1 <- survey$X25_0_r1 * library_size_r1/1000000
+hist(CPM_0_r1)
+
+CPM_10_r1 <- survey$X42_10_r1 * library_size_r1/1000000
+hist(CPM_10_r1)
+
+CPM_30_r1 <- survey$X42_30_r1 * library_size_r3/1000000
+hist(CPM_30_r1)
+
+```
+
+## 3.Deviation of the counts between two samples(scatterplot)
+
+```{r echo=TRUE}
+sample_r1 <- c(survey$X25_0_r1, survey$X42_10_r1, survey$X42_30_r1)
+sample_r2<- c(survey$X25_0_r2, survey$X42_10_r2, survey$X42_30_r2)
+
+deviation<- sample_r2-sample_r1
+plot(deviation, main="raw counts")
+
+```
+
+## 4.Library size to count of a selected feature(scatterplot)
+
+```{r echo=TRUE}
+library_size
+# Selected feature(gene): ICR1.
+ICR1_raw <- survey_Numeric[4,]
+# calculate CPM(ICR1) with sweep function, which multiply the counts of genes with the library size of the sample
+ICR1_CPM <- sweep(ICR1_raw, MARGIN = 2, library_size, `*`)/1000000   
+cat("The length of ICR1 is 3199bp. Quelle:https://www.yeastgenome.org/locus/S000132612")
+ICR1_RPKM <- sweep(ICR1_raw, MARGIN = 2, library_size, `/`) * 1000000 / 3199
+
+par(mfrow = c(1, 3))
+plot(library_size, ICR1_raw, main = "raw counts")
+plot(library_size, ICR1_CPM, main = "CPM counts")
+plot(library_size, ICR1_RPKM, main = "RPKM counts")
+```
+
+## 5. Feature length to count of the feature(Scatterplot)
+
+```{r echo=TRUE}
+
+#The yeast heatshock data is not properate for this plot because it does not contain gene length. Therefore I will create a data frame in oder to show how to calculate and plot feature length to count of the feature
+
+df1 <- read.table(text="
+   gene_id               R1      R2       R3  length
+ENSMUSG00000000028       58      93       48   789                 
+ENSMUSG00000000031       11      7        20   364                    
+ENSMUSG00000000037       3       5         6   196                                       
+ENSMUSG00000000058       66     93        69   436                                  
+ENSMUSG00000000085       55     68        97   177", header=TRUE)
+
+library_size2 <- rowSums( df1[,2:4] )
+
+gene_lengths <- c(789, 789, 789, 364, 364, 364, 196, 196, 196, 436, 436, 436, 177, 177, 177)
+featureLength_raw <- df1[, 2:4]
+featureLength_CPM <- sweep(featureLength_raw, MARGIN = 2, library_size2, `*`)/1000000   
+featureLength_RPKM <- sweep(featureLength_raw, MARGIN = 2, library_size2 * gene_lengths, `/`) * 1000000
+
+fraw <- as.numeric(rbind(featureLength_raw$R1, featureLength_raw$R2, featureLength_raw$R3))
+fCPM <- as.numeric(rbind(featureLength_CPM$R1, featureLength_CPM$R2, featureLength_CPM$R3))
+fRPKM <- as.numeric(rbind(featureLength_RPKM$R1, featureLength_RPKM$R2, featureLength_RPKM$R3))
+
+par(mfrow = c(1, 3))
+plot(gene_lengths, fraw, main = "raw counts")
+plot(gene_lengths, fCPM, main = "CPM counts")
+plot(gene_lengths, fRPKM, main = "RPKM counts")
+
+```

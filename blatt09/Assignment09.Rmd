@@ -1,0 +1,333 @@
+---
+title: "Assignment09"
+output: html_document
+date: "2023-06-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+survey<- read.csv("basic_yeast_heatshock.csv", header=TRUE)
+```
+
+## Recap 1: Gene Expression {#recap-1-gene-expression}
+
+--\> using only the log2 for more information \## Create a scatterplot showing the mean and standard deviation of each gene across all nine replicates
+
+```{r echo=TRUE}
+head(survey)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r echo=TRUE}
+yeast_log <- survey %>% 
+  select(-1) %>% 
+  mutate_all(~ log2(. + 1))
+
+yeast_summary <- yeast_log %>% 
+  summarize(mean = rowMeans(.),
+            sd = apply(., 1, sd, na.rm = TRUE))
+
+ggplot(yeast_summary, aes(x = mean, y = sd)) +
+  geom_point() +
+  xlab("Mean") +
+  ylab("Standard Deviation")
+
+```
+
+## Plot the expression of 'YFL014W' for all replicates, grouping the three replicates of each condition together {#plot-the-expression-of-yfl014w-for-all-replicates-grouping-the-three-replicates-of-each-condition-together}
+
+```{r echo=TRUE}
+yeast_log <- survey %>% 
+  select(-1) %>% 
+  mutate_all(~ log2(. + 1))
+
+gene_yfl014w <- yeast_log %>%
+  filter(row_number() %in% grep("YFL014W", survey[, 1])) %>%
+  gather(time_point, value)
+
+ggplot(gene_yfl014w, aes(x = time_point, y = value, color= time_point)) +
+  geom_point() +
+  xlab("Time Point") +
+  ylab("log2(Value + 1)") +
+  ggtitle("Overview gene YFL014W")
+
+```
+
+## Replicate the previous plot for 'YFL014W,' but add an additional layer of a line plot connecting the means per condition {#replicate-the-previous-plot-for-yfl014w-but-add-an-additional-layer-of-a-line-plot-connecting-the-means-per-condition}
+
+```{r echo=TRUE}
+yeast_log <- survey %>% 
+  select(-1) %>% 
+  mutate_all(~ log2(. + 1))
+
+gene_yfl014w <- yeast_log %>%
+  filter(row_number() %in% grep("YFL014W", survey[, 1])) %>%
+  gather(time_point, value)
+
+means <- c(rowMeans(survey[survey$gene_id == "YFL014W", ][2:4]), rowMeans(survey[survey$gene_id == "YFL014W", ][5:7]), rowMeans(survey[survey$gene_id == "YFL014W", ][8:10]))
+means <- log(means) + 1
+
+
+g <- ggplot(gene_yfl014w, aes(x = time_point, y = value, color= time_point)) +
+  geom_point() +
+  xlab("Time Point") +
+  ylab("log2(Value + 1)") +
+  ggtitle("Overview gene YFL014W")
+g +
+  annotate(geom = "segment", 
+           x = "X25_0_r2", xend = "X42_10_r2",
+                   y = means[1], yend = means[2],
+               color = "purple", linewidth = 1) + 
+  annotate(geom = "segment", 
+           x = "X42_10_r2", xend = "X42_30_r2",
+                   y = means[2], yend = means[3],
+               color = "purple", linewidth = 1)
+```
+
+## Calculate the mean expression per gene per condition. Create two scatter plots: one comparing the means of all genes at 0min and 10min, and the other comparing the means at 10min and 30min. {#calculate-the-mean-expression-per-gene-per-condition.-create-two-scatter-plots-one-comparing-the-means-of-all-genes-at-0min-and-10min-and-the-other-comparing-the-means-at-10min-and-30min.}
+
+## Identify genes that consistently exhibit rising or falling expression patterns (e.g.,0min \>10min \>30min) across the given time steps. Highlight or color these genes in the scatterplot from the previous step. {#identify-genes-that-consistently-exhibit-rising-or-falling-expression-patterns-e.g.0min-10min-30min-across-the-given-time-steps.-highlight-or-color-these-genes-in-the-scatterplot-from-the-previous-step.}
+
+
+```{r echo=TRUE}
+
+# Create a data frame with means per condition
+df <- data.frame(survey$gene_id, rowMeans(survey[2:4]), rowMeans(survey[5:7]), rowMeans(survey[8:10]))
+colnames(df)[1] <- "gene_id"
+colnames(df)[2] <- "X25_0"
+colnames(df)[3] <- "X42_10"
+colnames(df)[4] <- "X42_30"
+# add new column which shows whether falling or rising
+df$compare1 <- "rising"
+df$compare1[df$X25_0 > df$X42_10] <- "falling"
+df$compare2 <- "rising"
+df$compare2[df$X42_10 > df$X42_30] <- "falling"
+
+# Create a scatter plot for the first set of variables
+ggplot(df, aes(x = log(df[, 2]), y = log(df[, 3]), color = compare1)) +
+  geom_point() +
+  labs(title="0min vs 10min",
+        x ="means of X25_0", y = "means of X42_10")
+
+# Create a scatter plot for the second set of variables
+ggplot(df, aes(x = log(df[, 3]), y = log(df[, 4]), color = compare2)) +
+  geom_point() +
+  labs(title="10min vs 30min",
+        x ="means of X42_10", y = "means of X42_30")
+
+```
+
+
+## Task 1: PCA on Gene Expression {#task-1-pca-on-gene-expression}
+
+```{r echo=TRUE}
+library(tidyverse)
+#prcomp() function for PCA
+#not perfectly sutied for visualization -> use tidy.prcomp()
+library(broom)
+#install.packages("cowplot")
+library(cowplot)
+```
+
+In general, when performing PCA, we'll want to do (at least) three things:
+
+Look at the data in PC coordinates. Look at the rotation matrix. Look at the variance explained by each PC.
+
+```{r echo=TRUE}
+#we need numeric columns and we want unit variance:
+pca_fit <- survey %>% 
+  select(where(is.numeric)) %>% # retain only numeric columns
+  prcomp(scale = TRUE) # do PCA on scaled data
+```
+
+```{r echo=TRUE}
+pca_scores <- pca_fit$x
+pca_loadings <- pca_fit$rotation
+
+pca_scores <- cbind(pca_scores, survey$gene_id)
+colnames(pca_scores)[10] <- "gene_id"
+
+augmented_data <- augment(pca_fit, data=survey)
+```
+
+## Plot the PCA for the different samples, using colors to differentiate between conditions: {#plot-the-pca-for-the-different-samples-using-colors-to-differentiate-between-conditions}
+
+-\> combining the PC coordinates with the original dataset, so we can color points by categorical variables present in the original data but removed for the PCA
+
+Question: why we can't see different colors here??
+
+```{r echo=TRUE}
+gathered_data <- survey %>%
+  select(-1) %>%
+  gather(column, value)
+
+pca_fit %>%
+  augment(gathered_data) %>% # add original dataset back in
+  ggplot(aes(.fittedPC1, .fittedPC2, color=column)) + 
+  geom_point(size = 1.5) +
+  scale_color_manual(
+    values = c(X25_0_r1 = "#D55E00", X25_0_r2 = "#D55E40", X25_0_r3 = "#D55E50", X42_10_r1 = "#0072B2", X42_10_r2 = "#0072D3", X42_10_r3 = "#0072A1", X42_30_r1 = "#82BBAB", X42_30_r2 = "#067857", X42_30_r3 = "#74C365")
+  ) +
+  theme_half_open(12) + background_grid()
+
+gathered_data <- survey %>%
+  select(-1) %>%
+  gather(column, value)
+
+pca_fit %>%
+  augment(gathered_data) %>% # add original dataset back in
+  ggplot(aes(.fittedPC2, .fittedPC3, color=column)) + 
+  geom_point(size = 1.5) +
+  scale_color_manual(
+    values = c(X25_0_r1 = "#D55E00", X25_0_r2 = "#D55E40", X25_0_r3 = "#D55E50", X42_10_r1 = "#0072B2", X42_10_r2 = "#0072D3", X42_10_r3 = "#0072A1", X42_30_r1 = "#82BBAB", X42_30_r2 = "#067857", X42_30_r3 = "#74C365")
+  ) +
+  theme_half_open(12) + background_grid()
+```
+
+Looking at data in PC coordinates
+
+```{r echo=TRUE}
+
+arrow_style <- arrow(
+  angle = 20, ends = "first", type = "closed", length = grid::unit(8, "pt")
+)
+
+# plot rotation matrix
+pca_fit %>%
+  tidy(matrix = "rotation") %>%
+  pivot_wider(names_from = "PC", names_prefix = "PC", values_from = "value") %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_segment(xend = 0, yend = 0, arrow = arrow_style) +
+  geom_text(
+    aes(label = column),
+    hjust = 1, nudge_x = -0.02, 
+    color = "#904C2F"
+  ) +
+  xlim(-1.25, .5) + ylim(-.5, 1) +
+  coord_fixed() + # fix aspect ratio to 1:1
+  theme_minimal_grid(12)
+
+pca_fit %>%
+  tidy(matrix = "x") %>%
+  pivot_wider(names_from = "PC", names_prefix = "PC", values_from = "value") %>%
+  ggplot(aes(PC1, PC2)) +
+  geom_segment(xend = 0, yend = 0, arrow = arrow_style) +
+  #geom_text(
+  # aes(label = row),
+  #  hjust = 1, nudge_x = -0.02, 
+  #  color = "#904C2F"
+  #) +
+  xlim(-1.25, .5) + ylim(-.5, 1) +
+  coord_fixed() + # fix aspect ratio to 1:1
+  theme_minimal_grid(12)
+```
+
+## Plot the loadings of the PCA: {#plot-the-loadings-of-the-pca}
+
+beide plots
+
+```{r echo=TRUE}
+pca_loadings
+head(pca_scores)
+
+# Extract the loadings from the PCA
+loadings <- pca_fit$rotation
+
+# Create a data frame for the loadings
+loadings_df <- data.frame(Gene = rownames(loadings), 
+                          PC1 = loadings[, 1],
+                          PC2 = loadings[, 2],
+                          PC3 = loadings[, 3],
+                          PC4 = loadings[, 4],
+                          PC5 = loadings[, 5],
+                          PC6 = loadings[, 6],
+                          PC7 = loadings[, 7],
+                          PC8 = loadings[, 8],
+                          PC9 = loadings[, 9])
+
+# Plot the loadings
+ggplot(loadings_df, aes(PC1, PC2)) +
+  geom_point(size = 3) +
+  geom_text(aes(label = Gene), hjust = 0, vjust = 0) +
+  labs(x = "PC1", y = "PC2") +
+  theme_bw()
+
+# A different way to plot the loadings
+make_plot = function(i) {
+  temp_df <- data.frame(  PCs = colnames(pca_loadings), 
+                          values = pca_loadings[i,])
+  barplot(temp_df$values, names.arg = temp_df$PCs, main = rownames(loadings)[i])
+}
+par(mfrow = c(3, 3))
+#somehow it doesn't work with for loop
+make_plot(1)
+make_plot(2)
+make_plot(3)
+make_plot(4)
+make_plot(5)
+make_plot(6)
+make_plot(7)
+make_plot(8)
+make_plot(9)
+```
+
+```{r echo=TRUE}
+#the variance explained by each PC
+pca_fit %>%
+  tidy(matrix = "eigenvalues")
+pca_fit %>%
+  tidy(matrix = "eigenvalues") %>%
+  ggplot(aes(PC, percent)) +
+  geom_col(fill = "#56B4E9", alpha = 0.8) +
+  scale_x_continuous(breaks = 1:9) +
+  scale_y_continuous(
+    labels = scales::percent_format(),
+    expand = expansion(mult = c(0, 0.01))
+  ) +
+  theme_minimal_hgrid(12)
+```
+
+##Identify most influential genes along with their loadings per PC and create plot Determine the genes with the highest absolute loading values in the principal component. These genes are considered the most influential for that principal component.
+
+```{r echo=TRUE}
+cbind(pca_loadings, total = rowSums(pca_loadings))
+max(rowSums(pca_loadings))
+```
+
+So X25_0_r2 is the most influential gene. And we will make plots of the loadings per PC
+
+```{r echo=TRUE}
+X25_0_r2_df <- data.frame(  PCs = colnames(pca_loadings), 
+                          values = pca_loadings[2,], 
+                          group = c("A", "A", "A", "B", "B", "B", "C", "C", "C"))
+
+means <- c(mean(X25_0_r2_df$values[1:3]), mean(X25_0_r2_df$values[4:6]), mean(X25_0_r2_df$values[7:9]))
+
+g <- ggplot(X25_0_r2_df, aes(x = PCs, y = values, color= group)) +
+  geom_point() +
+  xlab("PCs") +
+  ylab("loadings") +
+  ggtitle("most influential gene's loadings")
+
+g +
+  annotate(geom = "segment", 
+           x = "PC2", xend = "PC5",
+                   y = means[1], yend = means[2],
+               color = "purple", linewidth = 1) + 
+  annotate(geom = "segment", 
+           x = "PC5", xend = "PC8",
+                   y = means[2], yend = means[3],
+               color = "purple", linewidth = 1)
+  
+```
+
+## Color the loadings of the genes in the mean expression scatterplot between two conditions, following the style of 'Recap 1 plot 4+5'. Perform this task for PC1 and PC2. {#color-the-loadings-of-the-genes-in-the-mean-expression-scatterplot-between-two-conditions-following-the-style-of-recap-1-plot-45.-perform-this-task-for-pc1-and-pc2.}
+
+```{r echo=TRUE}
+pca_loadings <- data.frame(pca_loadings)
+replicates <- c("A", "A", "A", "B", "B", "B", "C", "C", "C")
+ggplot(pca_loadings, aes(x = pca_loadings[, 1], y = pca_loadings[, 2], color = replicates)) +
+  geom_point() +
+  labs(title="PC1 vs PC2", x ="PC1", y = "PC2")
+```

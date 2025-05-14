@@ -1,0 +1,334 @@
+---
+title: "Assignment10"
+author: "Anna Lisa and Wenjia"
+date: "2023-06-29"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+YEASTRACT <- read.delim("yeastract2019-flat-file.tsv")
+```
+
+
+## Task 1: Biological networks
+
+```{r echo=TRUE}
+
+head(YEASTRACT)
+new_names <- c( "Regulator systematic", "Regulator standard", "Target systematic", "Target standard", "Id", "Date", "Environment", "Regulation", "Type", "Method")
+colnames(YEASTRACT) <- new_names
+head(YEASTRACT)
+```
+
+## 1. How many transcription factors/target genes are included in the file?
+```{r echo=TRUE}
+regulators <- YEASTRACT$`Regulator systematic`
+targets <- YEASTRACT$`Target systematic`
+
+num_transcription_factors <- length(unique(regulators))
+num_target_genes <- length(unique(targets))
+
+barplot(c(num_transcription_factors, num_target_genes), 
+        names.arg = c("Transcription Factors", "Target Genes"),
+        ylab = "Count",
+        main = "Number of Transcription Factors and Target Genes")
+```
+
+
+## 2. How are the edges described, and how many of them are redundant?
+```{r echo=TRUE}
+# Combine regulator and target to create unique edge identifiers
+edges <- paste(regulators, targets, sep = "-")
+
+# Count the total number of edges
+total_edges <- length(edges)
+
+# Identify duplicate edges
+redundant_edges <- sum(duplicated(edges))
+
+# Calculate the number of non-redundant edges
+non_redundant_edges <- total_edges - redundant_edges
+
+# Print the results
+print(paste("Total Edges:", total_edges))
+print(paste("Redundant Edges:", redundant_edges))
+print(paste("Non-Redundant Edges:", non_redundant_edges))
+
+edge_data <- data.frame(Type = c("Non-Redundant Edges", "Redundant Edges"),
+                        Count = c(non_redundant_edges, redundant_edges))
+
+# Create the ggplot
+ggplot(edge_data, aes(x = Type, y = Count, fill = Type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Number of Non-Redundant and Redundant Edges",
+       x = "Edge Type",
+       y = "Count") +
+  theme_minimal()
+```
+
+
+## 3. How many targets are associated with each transcription factor? How many transcription factors are associated with each target?
+```{r echo=TRUE}
+
+YEASTRACT %>%
+  group_by(`Regulator systematic`) %>%
+  summarize(targets = n_distinct(`Target systematic`)) %>%
+  head()
+
+YEASTRACT %>%
+  group_by(`Regulator systematic`) %>%
+  summarize(targets = n_distinct(`Target systematic`)) %>%
+  ungroup() %>%
+  as.data.frame() %>%
+  ggplot() +
+  geom_histogram(aes(x = targets), fill = "pink", colour = "black") +
+  ggtitle("counts of targets associated with each transcription factor") +
+  ylab("frequency")
+
+YEASTRACT %>%
+  group_by(`Target systematic`) %>%
+  summarize(transcription_factors = n_distinct(`Regulator systematic`)) %>%
+  head()
+
+YEASTRACT %>%
+  group_by(`Target systematic`) %>%
+  summarize(transcription_factors = n_distinct(`Regulator systematic`)) %>%
+  ungroup() %>%
+  as.data.frame() %>%
+  ggplot() +
+  geom_histogram(aes(x = transcription_factors), fill = "pink", colour = "black") +
+  ggtitle("counts of transcription factors associated with each target") + 
+  ylab("frequency")
+
+```
+## 4.  What is the timeframe of the data? Show a histogram.
+
+```{r echo=TRUE}
+dates = YEASTRACT$Date
+dates <- as.Date(dates, format = c("%Y"))
+dates <- as.data.frame(dates)
+ggplot(dates, aes(x=dates)) + geom_histogram(fill = "pink", colour = "black")
+```
+
+## 5. Display the distribution of the columns ’Environment’, ’Regulation’, ’Type’, and ’Method’. Research these attributes on the internet to find more information about their values.
+
+```{r echo=TRUE}
+
+environment <- 
+  YEASTRACT %>%
+  group_by(Environment) %>%
+  summarise(count = n())
+
+ggplot(environment, aes(Environment, count, fill = Environment)) + 
+  geom_bar(stat = 'identity')
+
+regulation <- 
+  YEASTRACT %>%
+  group_by(Regulation) %>%
+  summarise(count = n())
+
+ggplot(regulation, aes(Regulation, count)) +   
+    geom_bar(stat = 'identity')
+  
+type <- 
+  YEASTRACT %>%
+  group_by(Type) %>%
+  summarise(count = n())
+
+ggplot(type, aes(Type, count)) +   
+    geom_bar(stat = 'identity')
+
+method <- 
+  YEASTRACT %>%
+  group_by(Method) %>%
+  summarise(count = n())
+
+ggplot(method, aes(Method, count)) +   
+    geom_bar(stat = 'identity')
+```
+## 6. Utilize facets on the above columns for the plots. Are there any imbalances?
+```{r echo=TRUE}
+
+```
+
+## MSMB 04
+
+EM often used in motif discovery, multiple sequence alignment etc. \##
+Biased coinflip Example as known from EiB 2:
+
+```{r echo=TRUE}
+coinflips = (runif(10000) > 0.5)
+table(coinflips)
+
+oneFlip = function(fl, mean1 = 1, mean2 = 3, sd1 = 0.5, sd2 = 0.5) {
+  if (fl) {
+   rnorm(1, mean1, sd1)
+  } else {
+   rnorm(1, mean2, sd2)
+  }
+}
+fairmix = vapply(coinflips, oneFlip, numeric(1))
+library("ggplot2")
+library("dplyr")
+ggplot(tibble(value = fairmix), aes(x = value)) +
+     geom_histogram(fill = "purple", binwidth = 0.1)
+
+```
+
+## Discovering the hidden class labels
+
+E step: Assuming that 0 (i.e., the means, standard deviations and) is
+known, evaluate the membership weights
+
+M step: Given the membership weights of each observation xi, determine a
+new, improved maximum likelihood estimate of 0
+
+## What does the EM-Algorithm do ?
+
+The Expectation-Maximization (EM) algorithm is a statistical method used
+to estimate parameters in models with unobserved or missing data. It is
+particularly useful when dealing with problems involving incomplete or
+latent variables. The algorithm iteratively maximizes a likelihood
+function to estimate the parameters of interest
+
+## What mathematical background is used
+
+1.  Maximum Likelihood Estimation (MLE) --\> explained in our
+    presentation a few weeks ago
+
+    -MLE is a method for estimating the parameters of a statistical
+    model by maximizing the likelihood function. The likelihood function
+    measures the probability of observing the given data as a function
+    of the model parameters.
+
+    -The goal of MLE is to find the parameter values that maximize the
+    likelihood function, making the observed data most likely under the
+    assumed model
+
+2.  Latent Variables
+
+    -Latent variables are unobserved or hidden variables in a
+    statistical model. They are not directly measured or observed but
+    are inferred from other variables.
+
+    -Latent variables are often used to represent underlying concepts or
+    processes that are not directly measurable. For example, in
+    clustering problems, the latent variables represent the unknown
+    cluster assignments of data points.
+
+3.  It is used with Hidden Markov models, where the unobserved data
+    would be the states within the underlying Markov chain
+
+## EM algorithm step by step: 
+
+## Step 1: Initialization
+
+```         
+-   Start with initial guesses for the model parameters.
+-   These initial parameter values can be randomly chosen or based
+    on some prior knowledge.
+```
+
+Step 2: Expectation Step (E):
+
+\- algorithm computes the expected values of the latent variables given
+the observed data and the current parameter estimates
+
+\- calculates the probabilities or posterior distributions of the latent
+variables using the current parameter values and the observed data
+
+Step 3: Maximization Step (M):
+
+\- algorithm updates the parameter estimates by maximizing the expected
+log-likelihood (ELL) computed in the E-step
+
+\- finds the parameter values that maximize the ELL, treating the
+expected values of the latent variables as complete data
+
+Step 4: Iteration:
+
+\- Repeat the E-step and M-step until convergence is reached
+
+## Discuss one example of EM-algorithm:
+
+From EiB 2 --\> On closer inspection, you notice that the GC content of
+the sequences varies greatly. In reviewing their experiment, you find
+that the Petri dish was contaminated by another bacterium. Now you do
+not know from which bacterium the measured sequences originate. Use the
+EM algorithm to estimate the maximum likelihoods A and B of both
+genomes. Choose starting value 𝜃 A = 0.4 and 𝜃B = 0.6. Since the growth
+rate of both bacterial strains is approximately identical, you can
+assume that cells of both bacterial species occur equally frequently in
+the Petri dish.
+
+Note: In the expectation step, the conditional probability P (A\|k) for
+a sequence of bacterium A is calculated using k nucleotides from {G, C}.
+The probability of P (k\|A) can be calculated here using the binomial
+distribution B (𝜃, n, k).
+
+```{r echo=TRUE}
+# E-STEP
+calculate_conditional_probabilities <- function(sequences, thetaA, thetaB) {
+  conditional_probs <- list()
+
+  for (sequence in sequences) {
+    n <- nchar(sequence)
+    k <- sum(strsplit(sequence, "")[[1]] %in% c('G', 'C'))
+
+    PA_k <- dbinom(k, n, thetaA)
+    PB_k <- dbinom(k, n, thetaB)
+
+    conditional_probs[[sequence]] <- list(PA_k = PA_k, PB_k = PB_k)
+  }
+
+  return(conditional_probs)
+}
+
+# M-STEP
+# --> multiplying the k with the conditional probabilities and dividing the sum by(sum total counts multiplied with conditional probabilities)
+
+update_maximum_likelihoods <- function(sequences, conditional_probs) {
+  sumPA_k <- 0
+  sumPB_k <- 0
+  sumPA_total <- 0
+  sumPB_total <- 0
+
+  for (sequence in sequences) {
+    n <- nchar(sequence)
+    k <- sum(strsplit(sequence, "")[[1]] %in% c('G', 'C'))
+
+    sumPA_k <- sumPA_k + k * conditional_probs[[sequence]]$PA_k
+    sumPB_k <- sumPB_k + k * conditional_probs[[sequence]]$PB_k
+    sumPA_total <- sumPA_total + n * conditional_probs[[sequence]]$PA_k
+    sumPB_total <- sumPB_total + n * conditional_probs[[sequence]]$PB_k
+  }
+
+  thetaA <- sumPA_k / sumPA_total
+  thetaB <- sumPB_k / sumPB_total
+
+  return(list(thetaA = thetaA, thetaB = thetaB))
+}
+
+# Example
+sequences <- c("CTGAACGAGG", "CATTCCTTGG", "CGGGCCGGAC", "GTGGACCCTC", "AAAATGTACC")
+thetaA <- 0.4
+thetaB <- 0.6
+
+# E-step
+conditional_probs <- calculate_conditional_probabilities(sequences, thetaA, thetaB)
+
+# M-step
+updated_maximum_likelihoods <- update_maximum_likelihoods(sequences, conditional_probs)
+thetaA <- updated_maximum_likelihoods$thetaA
+thetaB <- updated_maximum_likelihoods$thetaB
+
+cat("Updated Maximum Likelihoods:")
+cat("\nTheta A:", thetaA)
+cat("\nTheta B:", thetaB)
+
+```

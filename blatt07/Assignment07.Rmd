@@ -1,0 +1,221 @@
+---
+title: "Assignment07"
+output: html_document
+date: "2023-06-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rtracklayer)
+library(dplyr)
+library(ggplot2)
+library(purrr)
+library(tidyr)
+library(readr)
+library(tibble)
+gtf <- rtracklayer::import('Saccharomyces_cerevisiae.R64-1-1.75.gtf')
+gtf_df=as.data.frame(gtf)
+```
+
+## Task 1: Get familiar with tidyverse
+
+## Excersise collection: Life expectancy 
+Vorwarnung: der code von der Website ging nicht, deswegen wird hoffentlich dieselbe Data benutzt (danke an Sofia )
+
+```{r echo=TRUE}
+gapminder_raw <- read.csv("https://raw.githubusercontent.com/resbaz/r-novice-gapminder-files/master/data/gapminder-FiveYearData.csv")
+#einlesen und ersten Einträge anschauen
+head(gapminder_raw)
+
+```
+
+## Research questions
+How did life expectancy change in the course of the last decades ?
+Did it change differently between the continents ?
+How does life expectancy differs today between the continents ?
+--> Generally, life expectancy has been increasing globally in the past decades 
+--> In more "developed" countries with better hygiene and medicine life expectancy is higher 
+--> in those countries, life expectancy has increased more rapidly 
+Source: https://www.statista.com/statistics/270861/life-expectancy-by-continent/
+
+Is life expectancy related to GDP (Gross Domestic Product)? If so, to what degree (and form)? Is this assocication moderated by continent?
+--> in general: positive correlation, indicating that higher GDP levels tend to be associated with longer life expectancy
+--> but this can vary across continents (regional factors and disparities)
+
+## First steps- loading needed library
+```{r echo=TRUE}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+## 6 Exercises
+## 6.1 Data Wrangling
+1. Filter the data for the Americas in 2007, deselect all other variables
+```{r echo=TRUE}
+# Piping: "and then" -> more functions at one
+#first filter the needed rows 
+gapminder_raw %>% filter(continent == "Americas", year=="2007") %>% 
+#select and show only countries in Americas continent from 2007
+select(country, lifeExp)
+
+```
+2. Create the variable gdp, defined as the product of population size and gdp per person
+```{r echo=TRUE}
+# mit allen 
+gdp <- gapminder_raw$pop * gapminder_raw$gdpPercap
+head(gdp)
+```
+3. Identify the observation with lowest gdp per year
+```{r echo=TRUE}
+lowest_gdp<- gapminder_raw %>% filter(gdpPercap==min(gdpPercap))
+lowest_gdp
+```
+4. Identify all observations with above average life expectancy, stratified for each continent
+--> also für jeden Kontinent einzeln?
+```{r echo=TRUE}
+avg_life_exp<- gapminder_raw %>% group_by(continent) %>% summarize(avg_life_exp = mean(lifeExp))
+data_con_average <- gapminder_raw %>% left_join(avg_life_exp, by = "continent")
+above_average<- data_con_average%>% filter(lifeExp> avg_life_exp)
+head(above_average)
+
+```
+--> nicht ganz sicher bei der Aufgabe
+-> fast die Hälfte an ürsprünglichen Reihen
+
+5. Count the observations identified in the last step
+-> count rows
+```{r echo=TRUE}
+observations <- nrow(above_average)
+head(observations)
+```
+
+6. Compute the mean life expectancy (grand mean)
+```{r echo=TRUE}
+grand_mean <- mean(gapminder_raw$lifeExp)
+head(grand_mean)
+```
+
+7. Compute the mean life expectancy for each year
+```{r echo=TRUE}
+mean_years <- gapminder_raw %>% group_by(year) %>% summarise(mean_years=mean(lifeExp))
+head(mean_years)
+```
+
+
+## 6.2 Data Visualization
+1. Create a scatter plot showing the association of gdp per person and life expectancy
+```{r echo=TRUE}
+library(ggplot2)
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + labs(x= "GDP per person", y="life expectancy") + ggtitle("association between gdp per person and life expectancy")
+```
+
+2. Add a rolling average line (LOESS smoother)
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + geom_smooth(method= "loess", se=FALSE, color="blue") + labs(x= "GDP per person", y="life expectancy") + ggtitle("updated association between gdp per person and life expectancy")
+```
+
+3. Add a linear model line
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + geom_smooth(method="loess", se=FALSE, color="blue") + geom_smooth(method= "lm", se=FALSE, color="red") + labs(x= "GDP per person", y="life expectancy") + ggtitle("new updated association between gdp per person and life expectancy")
+```
+
+4. Create scatter plot
+```{r echo=TRUE}
+
+ggplot(mean_years, aes(x=year, y=mean_years)) + geom_point()+geom_line()+labs(x="Year", y="Average life expectancy")+ ggtitle("Average life expectancy by year")
+```
+
+5. Modify the last plot so that there is a line for each continent
+```{r echo=TRUE}
+mean_years_continent <- gapminder_raw %>% group_by(year, continent) %>% summarize(mean_years =mean(lifeExp))
+
+ggplot(mean_years_continent, aes(x=year, y=mean_years, color=continent, group=continent))+ geom_point() + geom_line() +labs(x="year", y="Average life expectancy", color="Continent")+ ggtitle("average life expectancy by year, plus continent ")
+```
+
+6. Create a scatter plot showing the association of gdp per person and life expectancy
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x=gdpPercap, y=lifeExp, color=continent)) + geom_point() + labs(x= "GDP", y="Life expectancy", color="Continent") + ggtitle("association of gdp per person and life expectancy")
+```
+
+7. Modify last plot so that the size of the dots represents the population size. in addition, increase the transparency of the dots in order to mitigate overplotting
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop, alpha = 0.5)) +
+  geom_point() +
+  labs(x = "GDP per person", y = "Life Expectancy", color = "Continent", size = "Population") +
+  ggtitle("Association of GDP per person and Life Expectancy") +
+  guides(size = "none")
+```
+
+8. Modify last plot so that there is a facet for each continent
+-> using facet wrap
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop, alpha = 0.5)) +
+  geom_point() +
+  labs(x = "GDP per person", y = "Life Expectancy", color = "Continent", size = "Population") +
+  ggtitle("Association of GDP per person and Life Expectancy") +
+  facet_wrap(~ continent, nrow = 2) +
+  guides(size = "none")
+```
+
+9. Modify the last plot so that GDP is log transformed
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x = log10(gdpPercap), y = lifeExp, color = continent, size = pop, alpha = 0.5)) +
+  geom_point() +
+  labs(x = "Log GDP per person", y = "Life Expectancy", color = "Continent", size = "Population") +
+  ggtitle("Association of Log GDP per person and Life Expectancy") +
+  facet_wrap(~ continent, nrow = 2) +
+  guides(size = "none")
+```
+
+
+
+## Task 2: Recap 1: Yeast GTF
+
+## Give information about how many chromosome, features and subfeature entries are given in the gtf-file. How many entries of each type are in the gtf?
+counts of chromosome, feature, subfeature and type entries:
+```{r echo=TRUE}
+gtf_df %>%
+  count(seqnames)
+
+gtf_df %>%
+  count(gene_biotype)
+
+gtf_df %>%
+  count(gene_id) %>% #not sure what subfeature means here.
+  head
+
+gtf_df %>%
+  count(type)
+```
+Is the amount of features on the ’+’-strand the same as on the ’-’-strand? Is the
+amount the same on each chromosome?
+The amount of features is not the same. And the amount on each chromosome is also different.
+```{r echo=TRUE}
+gtf_df %>%
+  group_by(seqnames) %>%
+  count(strand) %>%
+  ungroup() 
+```
+Plot the length distribution of each feature (gene, cds, start-codon,...)
+
+```{r echo=TRUE}
+gtf_df %>%
+  ggplot() +
+  geom_histogram(aes(x = width), binwidth = 1000) +
+  facet_wrap(~type, ncol = 2)
+```
+
+Plot the relationship of each subfeature to the feature. E.g. how many transcripts
+are there per gene, are there transcripts with more than one exon?
+
+Answer: There is only one transcript per gene and there are transcripts with more than one exon.
+```{r echo=TRUE}
+gtf_df %>%
+  filter(type == type) %>%
+  group_by(gene_id) %>%
+  count(type) %>%
+  ungroup() %>%
+  as.data.frame() %>%
+  ggplot() +
+  geom_histogram(aes(x = n), binwidth = 1) +
+  facet_wrap(~type, ncol = 2)
+```
