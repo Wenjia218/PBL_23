@@ -1,0 +1,925 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Project plots},
+  pdfauthor={Anna Lisa und Wenjia},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Project plots}
+\author{Anna Lisa und Wenjia}
+\date{2024-01-10}
+
+\begin{document}
+\maketitle
+
+\hypertarget{data-preparation}{%
+\subsection{Data preparation}\label{data-preparation}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# prepare data from heat shock}
+\NormalTok{names }\OtherTok{\textless{}{-}} \FunctionTok{grep}\NormalTok{(}\StringTok{"Wildtype"}\NormalTok{, }\FunctionTok{names}\NormalTok{(heatshock), }\AttributeTok{value =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{df\_WT }\OtherTok{\textless{}{-}}\NormalTok{ heatshock[, names]}
+\FunctionTok{rownames}\NormalTok{(df\_WT) }\OtherTok{\textless{}{-}}\NormalTok{ heatshock}\SpecialCharTok{$}\NormalTok{gene\_id}
+
+
+\CommentTok{\# filter only genes that both in ATAC data and RNA data are}
+\NormalTok{gene\_ids }\OtherTok{\textless{}{-}} \FunctionTok{intersect}\NormalTok{(}\FunctionTok{rownames}\NormalTok{(df\_WT), }\FunctionTok{rownames}\NormalTok{(df\_ATAC))}
+\NormalTok{ATAC\_data }\OtherTok{\textless{}{-}}\NormalTok{ df\_ATAC[, }\FunctionTok{c}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{4}\NormalTok{, }\DecValTok{9}\SpecialCharTok{:}\DecValTok{16}\NormalTok{, }\DecValTok{21}\SpecialCharTok{:}\DecValTok{28}\NormalTok{)]}
+\NormalTok{RNA\_data }\OtherTok{\textless{}{-}}\NormalTok{ df\_WT[gene\_ids,]}
+\NormalTok{order }\OtherTok{\textless{}{-}} \FunctionTok{order}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(RNA\_data))}
+\NormalTok{RNA\_data }\OtherTok{\textless{}{-}}\NormalTok{ RNA\_data[,order]}
+\CommentTok{\#ATAC\_data and RNA\_data  will be used for following process of DEseq2}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{deseq}{%
+\subsection{DESeq}\label{deseq}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# condition: 1 = 25/30\_10, 2 = 25/30\_30, 3 = 25/42\_10, 4 = 25/42\_30}
+
+\NormalTok{calculateDESeq }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(ATAC\_data, RNA\_data, condition)\{}
+  \CommentTok{\# fold changes of ATAC\_data}
+\NormalTok{  compare1 }\OtherTok{\textless{}{-}}\NormalTok{ ATAC\_data[, }\FunctionTok{c}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{4}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{4}\SpecialCharTok{+}\DecValTok{1}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{4}\SpecialCharTok{+}\DecValTok{2}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{4}\SpecialCharTok{+}\DecValTok{3}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{4}\SpecialCharTok{+}\DecValTok{4}\NormalTok{)]}
+\NormalTok{  coldata }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}\AttributeTok{condition =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{,}\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{), }\AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{)))}
+\NormalTok{  dds }\OtherTok{\textless{}{-}} \FunctionTok{DESeqDataSetFromMatrix}\NormalTok{(}\AttributeTok{countData =}\NormalTok{ compare1, }\AttributeTok{colData =}\NormalTok{ coldata, }\AttributeTok{design=} \SpecialCharTok{\textasciitilde{}}\NormalTok{condition)}
+\NormalTok{  dds1 }\OtherTok{\textless{}{-}} \FunctionTok{DESeq}\NormalTok{(dds, }\AttributeTok{fitType =} \StringTok{\textquotesingle{}mean\textquotesingle{}}\NormalTok{, }\AttributeTok{minReplicatesForReplace =} \DecValTok{7}\NormalTok{, }\AttributeTok{parallel =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{  res }\OtherTok{\textless{}{-}} \FunctionTok{results}\NormalTok{(dds1, }\AttributeTok{contrast =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}condition\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{))}
+  \FunctionTok{head}\NormalTok{(res)}
+
+  \CommentTok{\# fold changes of RNA\_data}
+\NormalTok{  compare2 }\OtherTok{\textless{}{-}}\NormalTok{ RNA\_data[, }\FunctionTok{c}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{3}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{3}\SpecialCharTok{+}\DecValTok{1}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{3}\SpecialCharTok{+}\DecValTok{2}\NormalTok{, condition}\SpecialCharTok{*}\DecValTok{3}\SpecialCharTok{+}\DecValTok{3}\NormalTok{)]}
+\NormalTok{  coldata2 }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(}\AttributeTok{condition =} \FunctionTok{factor}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{,}\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{,}\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{,}\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{,}\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{), }\AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{)))}
+\NormalTok{  dds2 }\OtherTok{\textless{}{-}} \FunctionTok{DESeqDataSetFromMatrix}\NormalTok{(}\AttributeTok{countData =}\NormalTok{ compare2, }\AttributeTok{colData =}\NormalTok{ coldata2, }\AttributeTok{design=} \SpecialCharTok{\textasciitilde{}}\NormalTok{condition)}
+\NormalTok{  dds3 }\OtherTok{\textless{}{-}} \FunctionTok{DESeq}\NormalTok{(dds2, }\AttributeTok{fitType =} \StringTok{\textquotesingle{}mean\textquotesingle{}}\NormalTok{, }\AttributeTok{minReplicatesForReplace =} \DecValTok{7}\NormalTok{, }\AttributeTok{parallel =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{  res2 }\OtherTok{\textless{}{-}} \FunctionTok{results}\NormalTok{(dds3, }\AttributeTok{contrast =} \FunctionTok{c}\NormalTok{(}\StringTok{\textquotesingle{}condition\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}treat\textquotesingle{}}\NormalTok{, }\StringTok{\textquotesingle{}control\textquotesingle{}}\NormalTok{))}
+  \FunctionTok{head}\NormalTok{(res2)}
+
+  \CommentTok{\# output of the DESeq data in files}
+\NormalTok{  res\_df }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(res, }\AttributeTok{stringsAsFactors =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{check.names =} \ConstantTok{FALSE}\NormalTok{)}
+  \FunctionTok{write.table}\NormalTok{(res\_df, }\StringTok{\textquotesingle{}ATACData.DESeq2.txt\textquotesingle{}}\NormalTok{, }\AttributeTok{col.names =} \ConstantTok{NA}\NormalTok{, }\AttributeTok{sep =} \StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}t}\StringTok{\textquotesingle{}}\NormalTok{, }\AttributeTok{quote =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{  res\_df2 }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(res2, }\AttributeTok{stringsAsFactors =} \ConstantTok{FALSE}\NormalTok{, }\AttributeTok{check.names =} \ConstantTok{FALSE}\NormalTok{)}
+  \FunctionTok{write.table}\NormalTok{(res\_df2, }\StringTok{\textquotesingle{}RNAData.DESeq2.txt\textquotesingle{}}\NormalTok{, }\AttributeTok{col.names =} \ConstantTok{NA}\NormalTok{, }\AttributeTok{sep =} \StringTok{\textquotesingle{}}\SpecialCharTok{\textbackslash{}t}\StringTok{\textquotesingle{}}\NormalTok{, }\AttributeTok{quote =} \ConstantTok{FALSE}\NormalTok{)}
+\NormalTok{  res\_ATAC }\OtherTok{\textless{}{-}}\NormalTok{ res\_df}
+\NormalTok{  res\_ATAC}\SpecialCharTok{$}\NormalTok{gene\_id }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(res\_ATAC)}
+\NormalTok{  res\_RNA }\OtherTok{\textless{}{-}}\NormalTok{ res\_df2}
+\NormalTok{  res\_RNA}\SpecialCharTok{$}\NormalTok{gene\_id }\OtherTok{\textless{}{-}} \FunctionTok{rownames}\NormalTok{(res\_RNA)}
+
+\NormalTok{  join\_ATAC\_RNA }\OtherTok{\textless{}{-}} \FunctionTok{inner\_join}\NormalTok{(res\_ATAC, res\_RNA, }\AttributeTok{by=} \StringTok{"gene\_id"}\NormalTok{)}
+\NormalTok{  join\_ATAC\_RNA}\SpecialCharTok{$}\NormalTok{HSF1 }\OtherTok{\textless{}{-}} \FunctionTok{with}\NormalTok{(join\_ATAC\_RNA, gene\_id }\SpecialCharTok{==} \StringTok{"YGL073W"}\NormalTok{)}
+  
+  \FunctionTok{return}\NormalTok{(join\_ATAC\_RNA)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{function-for-making-plots}{%
+\subsection{function for making plots}\label{function-for-making-plots}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{makeplot }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(ATAC\_data, RNA\_data, condition, highlights, TF)\{}
+\NormalTok{    join\_ATAC\_RNA }\OtherTok{\textless{}{-}} \FunctionTok{calculateDESeq}\NormalTok{(ATAC\_data, RNA\_data, condition)}
+\NormalTok{    highlights }\OtherTok{\textless{}{-}}\NormalTok{ join\_ATAC\_RNA }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(gene\_id }\SpecialCharTok{\%in\%}\NormalTok{ highlights)}
+\NormalTok{    title }\OtherTok{\textless{}{-}} \ControlFlowTok{switch}\NormalTok{(condition, }\StringTok{"25/30\_10"}\NormalTok{, }\StringTok{"25/30\_30"}\NormalTok{, }\StringTok{"25/42\_10"}\NormalTok{, }\StringTok{"25/42\_30"}\NormalTok{)}
+\NormalTok{    title }\OtherTok{\textless{}{-}} \FunctionTok{paste}\NormalTok{(}\StringTok{"foldchanges of the same gene "}\NormalTok{, title, }\AttributeTok{sep=}\StringTok{" "}\NormalTok{)}
+\NormalTok{    g }\OtherTok{\textless{}{-}} \FunctionTok{ggplot}\NormalTok{(join\_ATAC\_RNA, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x =}\NormalTok{ log2FoldChange.x, }\AttributeTok{y =}\NormalTok{ log2FoldChange.y)) }\SpecialCharTok{+}
+      \FunctionTok{geom\_point}\NormalTok{() }\SpecialCharTok{+}
+      \FunctionTok{geom\_point}\NormalTok{(}\AttributeTok{data =}\NormalTok{ highlights, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{color =}\NormalTok{ TF)) }\SpecialCharTok{+} 
+      \FunctionTok{geom\_hline}\NormalTok{(}\AttributeTok{yintercept=}\DecValTok{0}\NormalTok{, }\AttributeTok{linetype=}\StringTok{"dashed"}\NormalTok{, }\AttributeTok{color =} \StringTok{"blue"}\NormalTok{) }\SpecialCharTok{+}
+      \FunctionTok{geom\_vline}\NormalTok{(}\AttributeTok{xintercept=}\DecValTok{0}\NormalTok{, }\AttributeTok{linetype=}\StringTok{"dashed"}\NormalTok{, }\AttributeTok{color =} \StringTok{"blue"}\NormalTok{) }\SpecialCharTok{+}
+      \CommentTok{\#labs(title = title) +}
+      \FunctionTok{ylab}\NormalTok{(}\StringTok{"RNA"}\NormalTok{) }\SpecialCharTok{+} 
+      \FunctionTok{xlab}\NormalTok{(}\StringTok{"ATAC"}\NormalTok{) }
+    \FunctionTok{return}\NormalTok{(g)}
+\NormalTok{\}}
+
+\CommentTok{\#show four plots of four different condition in one figure}
+\NormalTok{mergedplot }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(ATAC\_data, RNA\_data, highlights, TF)\{}
+\NormalTok{  g1 }\OtherTok{\textless{}{-}} \FunctionTok{makeplot}\NormalTok{(ATAC\_data, RNA\_data, }\DecValTok{1}\NormalTok{, highlights, TF)}
+\NormalTok{  g2 }\OtherTok{\textless{}{-}} \FunctionTok{makeplot}\NormalTok{(ATAC\_data, RNA\_data, }\DecValTok{2}\NormalTok{, highlights, TF)}
+\NormalTok{  g3 }\OtherTok{\textless{}{-}} \FunctionTok{makeplot}\NormalTok{(ATAC\_data, RNA\_data, }\DecValTok{3}\NormalTok{, highlights, TF)}
+\NormalTok{  g4 }\OtherTok{\textless{}{-}} \FunctionTok{makeplot}\NormalTok{(ATAC\_data, RNA\_data, }\DecValTok{4}\NormalTok{, highlights, TF)}
+\NormalTok{  figure }\OtherTok{\textless{}{-}} \FunctionTok{ggarrange}\NormalTok{(g1,g2,g3,g4,}
+                    \AttributeTok{labels =} \FunctionTok{c}\NormalTok{(}\StringTok{"25{-}30\_10"}\NormalTok{, }\StringTok{"25{-}30\_30"}\NormalTok{, }\StringTok{"25{-}42\_10"}\NormalTok{, }\StringTok{"25{-}42\_30"}\NormalTok{),}
+                    \AttributeTok{ncol =} \DecValTok{2}\NormalTok{, }\AttributeTok{nrow =} \DecValTok{2}\NormalTok{)}
+\NormalTok{  figure}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{scatterplot-of-foldchanges-from-atac-referring-how-open-in-the-protomor-region-is-and-rna-data}{%
+\subsection{scatterplot of foldchanges from ATAC (referring how open in
+the protomor region is) and RNA
+data}\label{scatterplot-of-foldchanges-from-atac-referring-how-open-in-the-protomor-region-is-and-rna-data}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{targets\_HSF1 }\OtherTok{\textless{}{-}}\NormalTok{ YEASTRACT }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Regulator standard}\StringTok{\textasciigrave{}} \SpecialCharTok{==} \StringTok{"HSF1"} \SpecialCharTok{\&}\NormalTok{ Environment }\SpecialCharTok{==} \StringTok{"Stress"}\NormalTok{)}
+\NormalTok{targets\_MSN2 }\OtherTok{\textless{}{-}}\NormalTok{ YEASTRACT }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Regulator standard}\StringTok{\textasciigrave{}} \SpecialCharTok{==} \StringTok{"MSN2"} \SpecialCharTok{\&}\NormalTok{ Environment }\SpecialCharTok{==} \StringTok{"Stress"}\NormalTok{)}
+\NormalTok{targets\_MSN4 }\OtherTok{\textless{}{-}}\NormalTok{ YEASTRACT }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{filter}\NormalTok{(}\StringTok{\textasciigrave{}}\AttributeTok{Regulator standard}\StringTok{\textasciigrave{}} \SpecialCharTok{==} \StringTok{"MSN4"} \SpecialCharTok{\&}\NormalTok{ Environment }\SpecialCharTok{==} \StringTok{"Stress"}\NormalTok{)}
+\NormalTok{highlights\_HSF1 }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(targets\_HSF1}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Target systematic}\StringTok{\textasciigrave{}}\NormalTok{)}
+\NormalTok{highlights\_MSN2 }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(targets\_MSN2}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Target systematic}\StringTok{\textasciigrave{}}\NormalTok{)}
+\NormalTok{highlights\_MSN4 }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(targets\_MSN4}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Target systematic}\StringTok{\textasciigrave{}}\NormalTok{)}
+\NormalTok{highlights\_MSN24 }\OtherTok{\textless{}{-}} \FunctionTok{intersect}\NormalTok{(highlights\_MSN4, highlights\_MSN2)}
+\NormalTok{highlights\_HSF1MSN24 }\OtherTok{\textless{}{-}} \FunctionTok{intersect}\NormalTok{(highlights\_HSF1, highlights\_MSN24)}
+
+\CommentTok{\# four plots of different conditions in one figure}
+\FunctionTok{mergedplot}\NormalTok{(ATAC\_data, RNA\_data, highlights\_HSF1, }\StringTok{"targets of HSF1"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 778 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 13 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 739 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 11 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 699 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 13 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 656 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 11 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{DESeq_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{mergedplot}\NormalTok{(ATAC\_data, RNA\_data, highlights\_MSN24, }\StringTok{"targets of MSN2 }\SpecialCharTok{\textbackslash{}n}\StringTok{ and MSN4"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 778 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 30 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 739 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 25 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 699 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 28 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 656 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 27 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{DESeq_files/figure-latex/unnamed-chunk-4-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{mergedplot}\NormalTok{(ATAC\_data, RNA\_data, highlights\_HSF1MSN24, }\StringTok{"targets of HSF1, }\SpecialCharTok{\textbackslash{}n}\StringTok{ MSN2 and MSN4"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## estimating size factors
+\end{verbatim}
+
+\begin{verbatim}
+## estimating dispersions
+\end{verbatim}
+
+\begin{verbatim}
+## gene-wise dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## mean-dispersion relationship
+\end{verbatim}
+
+\begin{verbatim}
+## final dispersion estimates
+\end{verbatim}
+
+\begin{verbatim}
+## fitting model and testing
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 778 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 7 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 739 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 5 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 699 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 7 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 656 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Removed 6 rows containing missing values (`geom_point()`).
+\end{verbatim}
+
+\includegraphics{DESeq_files/figure-latex/unnamed-chunk-4-3.pdf}
+
+\end{document}

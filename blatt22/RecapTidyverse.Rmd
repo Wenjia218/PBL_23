@@ -1,0 +1,203 @@
+---
+title: "TidyverseRecap"
+author: "Anna Lisa und Wenjia"
+date: "2023-11-13"
+output:
+pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+gapminder_raw <- read.csv("https://raw.githubusercontent.com/resbaz/r-novice-gapminder-files/master/data/gapminder-FiveYearData.csv")
+YEASTRACT <- read.delim("yeastract2019-flat-file.tsv")
+```
+
+```{r echo=TRUE}
+#einlesen und ersten Einträge anschauen
+head(gapminder_raw)
+```
+
+Vorweg: gute Wiederholung für tidyverse, unten noch ein paar Beispiele an unseren Data-Sets
+## Research questions
+How did life expectancy change in the course of the last decades ?
+Did it change differently between the continents ?
+How does life expectancy differs today between the continents ?
+--> Generally, life expectancy has been increasing globally in the past decades 
+--> In more "developed" countries with better hygiene and medicine life expectancy is higher 
+--> in those countries, life expectancy has increased more rapidly 
+
+## 6.1 Data Wrangling
+## Filter the data for the Americas in 2007, deselect all other variables.
+```{r echo=TRUE}
+library(tidyverse)
+#dim(gapminder_raw)
+gapminder1 <- gapminder_raw %>% 
+  filter(continent == "Americas", year == "2007")%>% 
+  select(country, lifeExp)
+head(gapminder1)
+```
+
+
+## Create the variable gdp, defined as the product of population size and gdp per person
+```{r echo=TRUE}
+gapminder_raw <- gapminder_raw %>% 
+  mutate(gdp = gdpPercap * pop)
+head(gapminder_raw)
+```
+
+## Identify the observation with lowest gdp per person.
+```{r echo=TRUE}
+lowest_gdp<- gapminder_raw %>% filter(gdpPercap==min(gdpPercap))
+lowest_gdp
+```
+
+## Identify all observations with above average life expectancy, stratified for each continent.
+```{r echo=TRUE}
+avg_life_exp<- gapminder_raw %>% group_by(continent) %>% summarize(avg_life_exp = mean(lifeExp))
+data_con_average <- gapminder_raw %>% left_join(avg_life_exp, by = "continent")
+above_average<- data_con_average%>% filter(lifeExp> avg_life_exp)
+head(above_average)
+```
+
+## Count the observations identified in the last step.
+```{r echo=TRUE}
+observations <- nrow(above_average) # nrow generell ganz hilfreich
+observations
+```
+
+## Compute the mean life expectancy (the grand mean; ie., across all observations)
+```{r echo=TRUE}
+across_mean <- mean(gapminder_raw$lifeExp)
+across_mean
+```
+
+## Compute the mean life expectancy for each year
+```{r echo=TRUE}
+mean_years <- gapminder_raw %>% group_by(year) %>% summarise(mean_years=mean(lifeExp))
+mean_years
+```
+
+## 6.2 Data Visualization
+## Create a scatter plot showing the association of gdp per person and life expectancy. Put the putative cause on the X axis and the putative effect on the y axis.
+```{r echo=TRUE}
+library(ggplot2)
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point(color="pink") + labs(x= "GDP per person", y="life expectancy") + ggtitle("association between gdp per person and life expectancy")
+
+#in this case we could use log(GDP per person) instead of GDP per person
+ggplot(gapminder_raw, aes(x= log(gdpPercap+1), y=lifeExp)) + geom_point(color="blue") + labs(x= "GDP per person", y="life expectancy") + ggtitle("association between gdp per person with log and life expectancy")
+```
+
+## Add a rolling average line (also known as LOESS smoother).
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + geom_smooth(method= "loess", se=FALSE, color="red") + labs(x= "GDP per person", y="life expectancy") + ggtitle("updated association between gdp per person and life expectancy")
+```
+
+3. Add a linear model line
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x= gdpPercap, y=lifeExp)) + geom_point() + geom_smooth(method="loess", se=FALSE, color="red") + geom_smooth(method= "lm", se=FALSE, color="green") + labs(x= "GDP per person", y="life expectancy") + ggtitle("new updated association between gdp per person and life expectancy")
+```
+
+4. Create scatter plot
+```{r echo=TRUE}
+ggplot(mean_years, aes(x=year, y=mean_years)) + geom_point()+geom_line()+labs(x="Year", y="Average life expectancy")+ ggtitle("Average life expectancy by year")
+```
+
+5. Modify the last plot so that there is a line for each continent
+```{r echo=TRUE}
+mean_years_continent <- gapminder_raw %>% group_by(year, continent) %>% summarize(mean_years =mean(lifeExp))
+
+ggplot(mean_years_continent, aes(x=year, y=mean_years, color=continent, group=continent))+ geom_point() + geom_line() +labs(x="year", y="Average life expectancy", color="Continent")+ ggtitle("average life expectancy by year, plus continent ")
+## group und continent für Projekt merken
+```
+
+6. Create a scatter plot showing the association of gdp per person and life expectancy
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x=gdpPercap, y=lifeExp, color=continent)) + geom_point() + labs(x= "GDP", y="Life expectancy", color="Continent") + ggtitle("association of gdp per person and life expectancy")
+
+ggplot(gapminder_raw, aes(x=log(gdpPercap), y=lifeExp, color=continent)) + geom_point() + labs(x= "log(GDP)", y="Life expectancy", color="Continent") + ggtitle("association of gdp per person and life expectancy with log")
+```
+
+7. Modify last plot so that the size of the dots represents the population size. in addition, increase the transparency of the dots in order to mitigate overplotting
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop, alpha = 0.5)) +
+  geom_point() +
+  labs(x = "GDP per person", y = "Life Expectancy", color = "Continent", size = "Population") +
+  ggtitle("Association of GDP per person and Life Expectancy") +
+  guides(size = "none")
+```
+
+8. Modify last plot so that there is a facet for each continent
+-> using facet wrap
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop, alpha = 0.5)) +
+  geom_point() +
+  labs(x = "GDP per person", y = "Life Expectancy", color = "Continent", size = "Population") +
+  ggtitle("Association of GDP per person and Life Expectancy") +
+  facet_wrap(~ continent, nrow = 2) +
+  guides(size = "none")
+```
+
+9. Modify the last plot so that GDP is log transformed
+```{r echo=TRUE}
+ggplot(gapminder_raw, aes(x = log10(gdpPercap), y = lifeExp, color = continent, size = pop, alpha = 0.5)) +
+  geom_point() +
+  labs(x = "Log GDP per person", y = "Life Expectancy", color = "Continent", size = "Population") +
+  ggtitle("Association of Log GDP per person and Life Expectancy") +
+  facet_wrap(~ continent, nrow = 2) +
+  guides(size = "none")
+```
+
+## Weitere Beispiele using Yeastract dataset
+1. violin plot
+```{r echo=TRUE}
+new_names <- c( "Regulator systematic", "Regulator standard", "Target systematic", "Target standard", "Id", "Date", "Environment", "Regulation", "Type", "Method")
+colnames(YEASTRACT) <- new_names
+
+plot_dat <- YEASTRACT %>%
+  group_by(`Target systematic`) %>%
+  summarise(num_tf = n_distinct(`Regulator systematic`)) %>%
+  ggplot(aes(x = "", y = num_tf)) +  # Leere x-Achse
+  geom_violin(fill = "violet", color = "white") +
+  ggtitle("Number of Transcription Factors associated with a target gene") +
+  xlab("under all conditions") + 
+  ylab("numbers of TFs") +
+  theme_bw()
+
+plot_dat
+```
+
+2. combinition of violin plots, with better view of comparision
+```{r echo=TRUE}
+counts <- data.frame()
+for(item in unique(YEASTRACT$Environment)){
+  control <- YEASTRACT %>%
+    filter(Environment == item) %>%
+    group_by(`Target systematic`) %>%
+    summarise(num_tf = n_distinct(`Regulator systematic`)) %>%
+    mutate(Environment = item)
+  counts <- rbind(counts,control)
+}
+ggplot(counts, aes(x = Environment, y = log(num_tf), fill = Environment)) +
+  geom_violin() +
+  ggtitle("Number of TFs associated with a target gene ") +
+  xlab("Environments") +  
+  ylab("numbers of TFs with log") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+```
+
+3. numbers of TFs in different conditions
+```{r echo=TRUE}
+YEASTRACT %>%
+  group_by(`Environment`) %>%
+  ggplot(aes(x = Environment, fill = Type)) +  
+  geom_bar() +
+  ggtitle("Number of TFs in different conditions") +
+  xlab("under all conditions") + 
+  ylab("numbers of TFs") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0.5))
+```

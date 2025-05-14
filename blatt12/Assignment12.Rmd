@@ -1,0 +1,140 @@
+---
+title: "Assignment12"
+author: "Anna Lisa and Wenjia"
+date: "2023-07-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+survey<- read.csv("basic_yeast_heatshock.csv", header=TRUE)
+```
+
+## MSMB 06
+
+## False discovery rate
+
+FDR = FP / (FP+TP)
+
+--\>statistical measure that quantifies the proportion of false discoveries among all the significant results when conducting multiple tests or exploring multiple variables.
+
+\--\> It helps control the risk of drawing incorrect conclusions due to chance variability.
+
+\--\> By controlling the FDR, researchers can ensure that the significant findings they identify are more likely to be true and not just random noise, providing more reliable results in situations with multiple tests or variables.
+
+## p-value
+
+\--\> helps determine the strength of evidence against a null hypothesis
+
+\--\> represents the probability of obtaining results as extreme as, or more extreme than, the observed data, assuming that the null hypothesis is true
+
+## multiple testing
+
+\--\> occurs when performing numerous statistical tests or comparisons
+
+Controlling method: **Bonferroni correction**: (controls Type \| errors)
+
+\--\> adjust alpha, alpha should be the max. significance niveau of all the testings
+
+what should be the max. sig. niv. for each ? --\>
+
+alpha(adjusted) = alpha/ j (j = amount of tests)
+
+```{r echo=TRUE}
+library(ggplot2)
+library(tidyverse)
+m = 10000
+ggplot(tibble(
+  alpha = seq(0, 7e-6, length.out = 100),
+  p     = 1 - (1 - alpha)^m),
+  aes(x = alpha, y = p)) +  geom_line() +
+  xlab(expression(alpha)) +
+  ylab("Prob( no false rejection )") +
+  geom_hline(yintercept = 0.05, col = "red")
+
+```
+
+\--\> not the best, but definitely very quick and easy to use
+
+## Null hypothesis / alternative hypothesis 
+
+H0: assumes there is no significant relationship or effect between variables or groups in a statistical analysis
+
+\--\> baseline or default position
+
+H1: opposes the null hypothesis and suggests the presence of a significant relationship or effect between variables or groups.
+
+\--\> observed differences are not due to random chance
+
+Why is the H1 true when the H0 fails ?
+
+\--\> because there must be sufficient evidence to reject the null hypothesis and support the presence of a significant relationship or effect
+
+\--\> one is always true, when the other is being rejected
+
+## Types of error
+
+Type \| error (false positive) --\> rejecting the null hypothesis, although it is true
+
+Type \|\| error (false negative) --\> not rejecting the null hypothesis, although it is false
+
+\--\> reducing one of them, automatically increasing the other one
+
+To keep in mind: specificity and sensitivity
+
+
+
+## Task 2: DESeq
+
+```{r echo=TRUE}
+library(tidyverse)
+library(DESeq2)
+library(UpSetR)
+library(data.table)
+
+vulcano=function(resultsObject,title){
+  par(mar=c(5,5,5,5), cex=1.0, cex.main=1.4, cex.axis=1.4, cex.lab=1.4)
+  
+  with(resultsObject, plot(log2FoldChange, -log10(padj), pch=20, main=paste("Volcano plot\n",title), cex=1.0, xlab=bquote(~Log[2]~fold~change), ylab=bquote(~-log[10]~Q~adj~value)))
+  with(subset(resultsObject, padj<0.05 & abs(log2FoldChange)>1), points(log2FoldChange, -log10(padj), pch=20, col="red", cex=0.5))
+  
+
+  abline(v=0, col="black", lty=3, lwd=1.0)
+  abline(v=-1, col="black", lty=4, lwd=2.0)
+  abline(v=1, col="black", lty=4, lwd=2.0)
+  abline(h=-log10(0.05), col="black", lty=4, lwd=2.0)
+}
+
+#reform the data
+df <- data.frame(survey$gene_id, rowMeans(survey[2:4]), rowMeans(survey[5:7]), rowMeans(survey[8:10]))
+colnames(df) <- c("gene_id", "X25_0", "X42_10", "X42_30")
+X25_0 <- data.frame(gene_id = df$gene_id, expressions = df$X25_0, condition = factor(rep("X25_0")))
+X42_10 <- data.frame(gene_id = df$gene_id, expressions = df$X42_10, condition = factor(rep("X42_10")))
+X42_30 <- data.frame(gene_id = df$gene_id, expressions = df$X42_30, condition = factor(rep("X42_30")))
+compare1 <- rbind(X25_0, X42_10)
+compare2 <- rbind(X25_0, X42_30)
+
+# X25_0 VS X42_10
+cts <- cts[, rownames(compare1)]
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                                colData = compare1,
+                                design= ~ condition)
+dds <- DESeq(dds)
+res <- results(dds)
+
+vulcano(res, "X25_0 VS X42_10")
+
+# X25_0 VS X42_30
+
+cts <- cts[, rownames(compare2)]
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                                colData = compare1,
+                                design= ~ condition)
+dds <- DESeq(dds)
+res <- results(dds)
+
+vulcano(res, "X25_0 VS X42_30")
+
+```

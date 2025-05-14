@@ -1,0 +1,275 @@
+---
+title: "Yeast heat-shock data analysis: Project design"
+author: "Anna Lisa und Wenjia"
+date: "2023-12-6"
+output:
+pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library("pwr")
+library(GGally)
+library(DESeq2)
+library(pheatmap)
+
+df <- read.delim("complex_yeast_heatshock.tsv")
+df_ATAC <- read.delim("ATACcounts_promotor_us500_ds100.tsv")
+```
+
+## Chapter 13 MSMB:
+
+## Types of experiments: 
+    controlled experiment: control over all relevant variables
+    study: important conditions are not under control
+    randomized controlled trial: control assignment of the variable of interest
+    meta-analysis: an observational study on several experiments
+    
+## Error: bias and noise
+
+## Units vs. fold-changes:
+Fold changes are often used when dealing with relative changes, where the focus is on comparing the proportion of change relative to the initial value. Units, on the other hand, provide a direct measurement of the change in a specific scale or measurement unit.
+
+## Blocking and pairing
+Use the method to compare HSF1 KD and wild type under 30 min 42 degree
+```{r echo=TRUE}
+HSF1_KD <- grep("HSF1", names(df), value = TRUE)
+HSF1_KD <- grep("42_30", HSF1_KD, value = TRUE)
+HSF1KD_df <- df[, HSF1_KD]
+HSF1KD_values <- rowMeans(HSF1KD_df)
+
+WT <- grep("Wildtype", names(df), value = TRUE)
+WT <- grep("42_30", WT, value = TRUE)
+WT_df <- df[, WT]
+WT_values <- rowMeans(WT_df)
+
+# simple t test
+t.test(HSF1KD_values, WT_values, paired = FALSE)
+# paired t test
+t.test(HSF1KD_values, WT_values, paired = TRUE)
+```
+Likewise, compare the MSN24 KO and wide type of 30 min at 42 degree
+```{r echo=TRUE}
+MSN24_KO <- grep("MSN24", names(df), value = TRUE)
+MSN24_KO <- grep("42_30", MSN24_KO, value = TRUE)
+MSN24KO_df <- df[, MSN24_KO]
+MSN24KO_values <- rowMeans(MSN24KO_df)
+
+# simple t test
+t.test(MSN24KO_values, WT_values, paired = FALSE)
+# paired t test
+t.test(MSN24KO_values, WT_values, paired = TRUE)
+```
+In t-tests, a lower value means that the observed difference between groups (or the relationship between variables) is relatively larger compared to the variability observed in the data.
+
+## Power calculations
+Power calculation, in statistics, refers to the process of determining the probability that a statistical test will correctly reject the null hypothesis when it's false.
+For example, the probability of rejecting the null hypothesis of a two-sample t-test with 15 samples, given an effect size d of 0.5, a significance level sig.level of 0.05 will be:
+```{r echo=TRUE}
+pwr.t.test(n = 15, d = 0.5, sig.level = 0.05, type = "two.sample")
+```
+
+Likewise, if we would like to know what sample size would be required under certain values:
+
+```{r echo=TRUE}
+pwr.t.test(d = 0.5, sig.level = 0.05, type = "two.sample", power = 0.8)
+```
+In our data set of yeast heat shock, there is a sample size of 3 replicates. So given an effect size of 0.8 and significance level of 0.05, the power should be:
+```{r echo=TRUE}
+pwr.t.test(n = 3, d = 0.8, sig.level = 0.05, type = "two.sample")
+```
+
+
+## Longitudinal data
+Longitudinal data refers to data collected over a period of time from the same individuals, groups, or subjects. It involves multiple observations or measurements taken at different time points, allowing researchers to track changes, trends, or patterns within the same subjects over time. 
+
+Analyzing longitudinal data requires specific statistical methods that account for dependencies between measurements taken from the same individuals. Techniques like Markov Models, Master equation and Piece-wise deterministic stochastic processes are commonly used to analyze such data. 
+
+## Data representation
+
+Improving data representation in R involves various techniques depending on the context, including visualization, data summarization, and transformation. For example, ggplots likes its data in dataframe objects while heat map needs everything in matrices.
+
+We could make our complex_yeast_heatshock with better representation by reordering its columns and calculating the means of three replicates:
+```{r echo=TRUE}
+ordered_df <- df[, order(names(df))]
+ordered_df <- as.data.frame(ordered_df)
+```
+
+
+## Analyze heat shock dataset
+
+## 1. Using heatmap to give a general view of the data set
+```{r echo=TRUE}
+means_df <- data.frame(matrix(nrow = nrow(ordered_df), ncol = 20))
+# Calculate means for every three consecutive columns
+for (i in 1:20) {
+  start_col <- (i - 1) * 3 + 2
+  end_col <- i * 3 +1
+  means_df[, i] <- rowMeans(ordered_df[, start_col:end_col])
+}
+# Assign meaningful column names to the new data frame
+names <- colnames(ordered_df)[seq(from = 2, to = 59, by = 3)]
+colnames(means_df) <- names
+
+merge_names <- c()
+for (name in names){
+  name <- substr(name, 1, nchar(name) - 3)
+  merge_names <- append(merge_names, name)
+}
+colnames(means_df) <- merge_names
+rownames(means_df) <- ordered_df[, 1]
+data_matrix <- as.matrix(means_df)
+data_matrix[data_matrix == 0] <- 0.001
+
+data_matrix <- log(data_matrix)
+pheatmap(data_matrix, cluster_cols = F, show_rownames=F, scale='column',
+         clustering_method = "complete")
+
+# It is conspicuous that there is a bunch of genes that have low expression value, it could be because they don't regulate any of the heat shock stress. 
+# We are interested in the genes, whose value changes a lot under different conditions of temperature, which indicates that they are related to heat shock responses
+# we will also look into genes, whose expression increases or decreases with MSN24 KO or HSF1 KD compared to wild type, which indicates that they probably have co-regulation with MSN24 or HSF1 or is connected to them.
+
+means_df2 <- data.frame(matrix(nrow = nrow(df_ATAC), ncol = 7))
+# Calculate means for every four consecutive columns
+for (i in 1:7) {
+  start_col <- (i - 1) * 4
+  end_col <- i * 4 - 1
+  means_df2[, i] <- rowMeans(df_ATAC[, start_col:end_col])
+}
+colnames(means_df2) <- c("X25","X37_5","X37_10","X37_30","X42_5","X42_10","X42_30")
+rownames(means_df2) <- rownames(df_ATAC)
+
+```
+
+## 3. plot foldchanges
+```{r echo=TRUE}
+test <- means_df2[, 1:2]
+test <- as.data.frame(lapply(test, as.integer))
+coldata <- matrix(c("control", "heat"), dimnames = list(colnames(test), 'X25'))
+dds <- DESeqDataSetFromMatrix(countData = test,
+                                colData = coldata,
+                                design= ~ X25)
+#dds <- DESeq(dds)
+```
+
+
+## 3. Using violin plots to show the expression of certain gene in different conditions
+
+```{r echo=TRUE}
+condition <- c("X25_0","X25_0","X25_0","X37_10","X37_10","X37_10","X37_30","X37_30","X37_30","X42_10","X42_10","X42_10","X42_30","X42_30","X42_30")
+condition2 <- c("X25","X25","X25","X25","X37_5","X37_5","X37_5","X37_5","X37_10","X37_10","X37_10","X37_10","X37_30","X37_30","X37_30","X37_30","X42_5","X42_5","X42_5","X42_5","X42_10","X42_10","X42_10","X42_10","X42_30","X42_30","X42_30","X42_30")
+
+
+mergeData <- function(data){
+  data <- rbind(data, colnames(data))
+  data <- data.frame(t(data), stringsAsFactors = F)
+  colnames(data) <- c( "values","conditions")
+  rownames(data) <- c(1:15)
+  data$values <- as.numeric(data$values)
+  return(data)
+}
+
+mergeData2 <- function(data){
+  data <- rbind(data, colnames(data))
+  data <- data[,-29]
+  data <- data.frame(t(data), stringsAsFactors = F)
+  colnames(data) <- c( "values","conditions")
+  rownames(data) <- c(1:28)
+  data$values <- as.numeric(data$values)
+  return(data)
+}
+
+violin_plots <- function(gene){
+  df_gene <- 
+      df %>% 
+      filter(`gene_id` == gene)
+  names <- grep("HSF1", names(df_gene), value = TRUE)
+  HSF1_KD <- df_gene[, names]
+  HSF1_KD <- mergeData(HSF1_KD)
+  
+  names <- grep("MSN24", names(df_gene), value = TRUE)
+  MSN24_KO <- df_gene[, names]
+  MSN24_KO <- mergeData(MSN24_KO)
+  
+  names <- grep("Wildtype", names(df_gene), value = TRUE)
+  WT <- df_gene[, names]
+  WT<- mergeData(WT)
+  
+  myTitle1 = paste("Overview HSF1 KD", gene, sep=" ")
+  g1 <- ggplot(HSF1_KD, aes(x = condition, y = values, fill = condition)) +
+  geom_violin() +
+  labs(title = myTitle1) +
+  ylab("Value") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+  
+  myTitle2 = paste("Overview MSN24 KO", gene, sep=" ")
+  g2 <- ggplot(MSN24_KO, aes(x = condition, y = values, fill = condition)) +
+  geom_violin() +
+  labs(title = myTitle2) +
+  ylab("Value") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+  myTitle3 = paste("Overview Wildtype", gene, sep=" ")
+  g3 <- ggplot(WT, aes(x = condition, y = values, fill = condition)) +
+  geom_violin() +
+  labs(title = myTitle3) +
+  ylab("Value") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+  
+  
+  # add a plot of counts binding sites
+  df_counts <- df_ATAC
+  df_counts$gene_id = rownames(df_counts)
+  df_gene2 <- 
+      df_counts %>% 
+      filter(`gene_id` == gene)
+  df_gene2 <- mergeData2(df_gene2)
+  
+  myTitle4 = "Counts of binding sites"
+  g4 <- ggplot(df_gene2, aes(x = condition2, y = values, fill = condition2)) +
+  geom_boxplot() +
+  labs(title = myTitle4) +
+  ylab("Value") +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+  
+  library(gridExtra)
+  combined_plots <- grid.arrange(g1, g2, g3, g4, ncol = 2)
+  
+}
+
+violin_plots("YGL073W")
+violin_plots("YMR037C")
+violin_plots("YKL062W")
+
+
+
+```
+## 4. Correlation of all the genes
+```{r echo=TRUE}
+cor_df <- df[, -1]
+rownames(cor_df) <- df[,1]
+cor_df <- t(cor_df)
+
+# high correlation of two genes indicates the possible connections or interactions between these two genes
+# There are more than 7,000 genes in the data set
+ggcorr(cor_df[, 1:50])
+ggcorr(cor_df[, 500:550])
+
+```
+
+
+
+## 5. ideas of project
+
+Welche sind wichtig aus YEASTRACT → Heatshock-Dataset → KD/KO how expression changed  (DESeq) → on which targets they expressed with heat stress, and on which targets they don’t expressed without stress → DESeq & expression → ATAC-Seq Dataset - what will come out? → Targets associated with HSF1/MSN2/4 go up | Targets associated with GCN4 goes down→ cell want to survive 
+

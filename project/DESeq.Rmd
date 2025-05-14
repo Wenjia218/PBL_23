@@ -1,0 +1,612 @@
+---
+title: "Project plots"
+author: "Anna Lisa und Wenjia"
+date: "2024-01-22"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+
+## Data
+
+```{r echo=TRUE}
+
+library( "DESeq2" )
+library(readr)
+library(ggplot2)
+library(tidyr)
+library(tidyverse)
+library(ggpubr)
+library(BiocManager)
+library(RCy3)
+library(igraph)
+library(dplyr)
+library("org.Sc.sgd.db")
+heatshock <- read.delim("complex_yeast_heatshock.tsv")
+df_ATAC <- read.delim("ATACcounts_promotor_us500_ds100.tsv")
+TFLink <- read.delim('TFLink_Saccharomyces_cerevisiae_interactions_SS_simpleFormat_v1.0.tsv')
+TFLink$Name.Target<-mapIds(org.Sc.sgd.db, keys=TFLink$UniprotID.Target, column="ORF", keytype="UNIPROT", multiVals="first")
+
+# prepare data from heat shock
+names <- grep("Wildtype", names(heatshock), value = TRUE)
+df_WT <- heatshock[, names]
+rownames(df_WT) <- heatshock$gene_id
+
+
+# filter only genes that both in ATAC data and RNA data are
+gene_ids <- intersect(rownames(df_WT), rownames(df_ATAC))
+ATAC_data <- df_ATAC[, c(1:4, 9:16, 21:28)]
+RNA_data <- df_WT[gene_ids,]
+order <- order(colnames(RNA_data))
+RNA_data <- RNA_data[,order]
+#ATAC_data and RNA_data  will be used for following process of DEseq2
+```
+
+
+
+## Cytoscape
+
+```{r echo=TRUE}
+TF_HSF1 <-
+  TFLink %>% filter(`Name.TF` == "HSF1")
+TF_HSF1 <- TF_HSF1[,5:6]
+TF_MSN2 <-
+  TFLink %>% filter(`Name.TF` == "MSN2")
+TF_MSN2 <- TF_MSN2[,5:6]
+TF_MSN4 <-
+  TFLink %>% filter(`Name.TF` == "MSN4")
+TF_MSN4 <- TF_MSN4[,5:6]
+
+#prepare data for the network
+nodesHSF1 <- levels(factor(as.vector(TF_HSF1[,2])))
+nodesHSF1 <- append(nodesHSF1, "HSF1")
+
+nodesMSN2 <- levels(factor(as.vector(TF_MSN2[,2])))
+nodesMSN2 <- append(nodesMSN2, "MSN2")
+
+nodesMSN4 <- levels(factor(as.vector(TF_MSN4[,2])))
+nodesMSN4 <- append(nodesMSN4, "MSN4")
+
+TF_HSF1_MSN24 <- rbind(TF_HSF1,TF_MSN2, TF_MSN4)
+nodes <- c(nodesHSF1, nodesMSN2, nodesMSN4)
+nodes <- unique(nodes)
+ig1 <- graph_from_data_frame(TF_HSF1_MSN24, directed=FALSE, vertices=nodes)
+createNetworkFromIgraph(ig1,"myIgraphHSF1_MSN24")
+```
+
+## DESeq 
+```{r echo=TRUE}
+# condition: 1 = 25/37_10, 2 = 25/37_30, 3 = 25/42_10, 4 = 25/42_30
+
+calculateDESeq <- function(ATAC_data, RNA_data, condition){
+  # fold changes of ATAC_data
+  compare1 <- ATAC_data[, c(1:4, condition*4+1, condition*4+2, condition*4+3, condition*4+4)]
+  coldata <- data.frame(condition = factor(c('control', 'control', 'control', 'control', 'treat', 'treat', 'treat','treat'), levels = c('control', 'treat')))
+  dds <- DESeqDataSetFromMatrix(countData = compare1, colData = coldata, design= ~condition)
+  dds1 <- DESeq(dds, fitType = 'mean', minReplicatesForReplace = 7, parallel = FALSE)
+  res <- results(dds1, contrast = c('condition', 'treat', 'control'))
+  head(res)
+
+  # fold changes of RNA_data
+  compare2 <- RNA_data[, c(1:3, condition*3+1, condition*3+2, condition*3+3)]
+  coldata2 <- data.frame(condition = factor(c('control','control','control','treat', 'treat','treat'), levels = c('control', 'treat')))
+  dds2 <- DESeqDataSetFromMatrix(countData = compare2, colData = coldata2, design= ~condition)
+  dds3 <- DESeq(dds2, fitType = 'mean', minReplicatesForReplace = 7, parallel = FALSE)
+  res2 <- results(dds3, contrast = c('condition', 'treat', 'control'))
+  head(res2)
+
+  # output of the DESeq data in files
+  res_df <- data.frame(res, stringsAsFactors = FALSE, check.names = FALSE)
+  write.table(res_df, 'ATACData.DESeq2.txt', col.names = NA, sep = '\t', quote = FALSE)
+  res_df2 <- data.frame(res2, stringsAsFactors = FALSE, check.names = FALSE)
+  write.table(res_df2, 'RNAData.DESeq2.txt', col.names = NA, sep = '\t', quote = FALSE)
+  res_ATAC <- res_df
+  res_ATAC$gene_id <- rownames(res_ATAC)
+  res_RNA <- res_df2
+  res_RNA$gene_id <- rownames(res_RNA)
+
+  join_ATAC_RNA <- inner_join(res_ATAC, res_RNA, by= "gene_id")
+
+  return(join_ATAC_RNA)
+}
+
+
+  df1 <- calculateDESeq(ATAC_data, RNA_data, 1)
+  df2 <- calculateDESeq(ATAC_data, RNA_data, 2)
+  df3 <- calculateDESeq(ATAC_data, RNA_data, 3)
+  df4 <- calculateDESeq(ATAC_data, RNA_data, 4)
+  df1$condition <- "25-37_10"
+  df2$condition <- "25-37_30"
+  df3$condition <- "25-42_10"
+  df4$condition <- "25-42_30"
+  DEseqdf <- rbind(df1,df2,df3,df4)
+
+```
+
+## function for making plots
+```{r echo=TRUE}
+makeplot <- function(join_ATAC_RNA, highlights, targets){
+  highlights <- join_ATAC_RNA %>% filter(gene_id %in% highlights)
+  title <- "foldchanges of the same gene from ATAC and heat shock data"
+  ggplot(join_ATAC_RNA, aes(x = log2FoldChange.x, y = log2FoldChange.y), size = 0.5) +
+      geom_point() +
+      geom_point(data = highlights, aes(color = targets), size = 1.5) + 
+      geom_hline(yintercept=0, linetype="dashed", color = "blue") +
+      geom_vline(xintercept=0, linetype="dashed", color = "blue") +
+      labs(x = "ATAC", y = "heat shock", title = title) +
+      facet_wrap(vars(condition))
+}
+
+
+```
+
+## scatterplot of foldchanges from ATAC (referring how open in the protomor region is) and RNA data
+```{r echo=TRUE,  warning=FALSE,error=FALSE}
+# find targets from TFLink Database
+TFtargets_HSF1 <- TFLink %>% filter(`Name.TF` == "HSF1")
+TF_HSF1<-TFtargets_HSF1$Name.Target
+TFtargets_MSN2 <- TFLink %>% filter(`Name.TF` == "MSN2")
+TF_MSN2<-TFtargets_MSN2$Name.Target
+TFtargets_MSN4 <- TFLink %>% filter(`Name.TF` == "MSN4")
+TF_MSN4<-TFtargets_MSN4$Name.Target
+TF_MSN24 <- intersect(TF_MSN2, TF_MSN4)
+TF_HSF1_MSN24 <- intersect(TF_MSN24, TF_HSF1)
+
+
+makeplot(DEseqdf, TF_HSF1, "targets of \n HSF1")
+makeplot(DEseqdf, TF_MSN24, "targets of \n MSN24")
+makeplot(DEseqdf, TF_HSF1_MSN24, "targets of \n HSF1 and \n MSN24")
+
+```
+
+```{r echo=TRUE}
+heatshockDESeq <- function(RNA_data, condition){
+ # fold changes of RNA_data
+  compare2 <- RNA_data[, c(1:3, condition*3+1, condition*3+2, condition*3+3)]
+  coldata2 <- data.frame(condition = factor(c('control','control','control','treat', 'treat','treat'), levels = c('control', 'treat')))
+  dds2 <- DESeqDataSetFromMatrix(countData = compare2, colData = coldata2, design= ~condition)
+  dds3 <- DESeq(dds2, fitType = 'mean', minReplicatesForReplace = 7, parallel = FALSE)
+  res2 <- results(dds3, contrast = c('condition', 'treat', 'control'))
+  # output of the DESeq data in files
+  res_df2 <- data.frame(res2, stringsAsFactors = FALSE, check.names = FALSE)
+  write.table(res_df2, 'RNAData.DESeq2.txt', col.names = NA, sep = '\t', quote = FALSE)
+  res_RNA <- res_df2
+  res_RNA$gene_id <- rownames(res_RNA)
+  return(res_RNA)
+}
+
+ATACDESeq <- function(ATAC_data, condition){
+ # fold changes of ATAC_data
+  compare1 <- ATAC_data[, c(1:4, condition*4+1, condition*4+2, condition*4+3, condition*4+4)]
+  coldata <- data.frame(condition = factor(c('control', 'control', 'control', 'control', 'treat', 'treat', 'treat','treat'), levels = c('control', 'treat')))
+  dds <- DESeqDataSetFromMatrix(countData = compare1, colData = coldata, design= ~condition)
+  dds1 <- DESeq(dds, fitType = 'mean', minReplicatesForReplace = 7, parallel = FALSE)
+  res <- results(dds1, contrast = c('condition', 'treat', 'control'))
+  
+  # output of the DESeq data in files
+  res_df2 <- data.frame(res, stringsAsFactors = FALSE, check.names = FALSE)
+  write.table(res_df2, 'ATACData.DESeq2.txt', col.names = NA, sep = '\t', quote = FALSE)
+  res_RNA <- res_df2
+  res_RNA$gene_id <- rownames(res_RNA)
+  return(res_RNA)
+}
+```
+
+```{r Run DESEQ,  include=FALSE,message=FALSE,warning=FALSE,error=FALSE}
+library(tidyverse)
+library(DESeq2)
+#remove.packages("readr")
+#install.packages("readr")
+
+data=read.csv2("./complex_yeast_heatshock.tsv",sep="\t",check.names=FALSE)
+mapping=readr::read_tsv("sample_mapping.tsv")
+
+mapping$condition = paste0(mapping$temperature, "_", mapping$time)
+condition = unique(mapping$condition)
+knockouts = unique(mapping$knockout)
+comparisons = knockouts#[knockouts != "Wildtype"] 
+condition = condition[condition != "25_0"]
+
+deseq_results_list=list()
+
+for (knock in comparisons){
+  ref = mapping %>% filter(knockout == knock & temperature == "25" & time == "0")
+  ref_string = paste0(knock, "_", "25", "_", "0")
+  mapping_knock = mapping %>% filter(knockout == knock)
+  
+  for (con in condition){
+    mapping_comparison = mapping_knock  %>% filter(condition == con) 
+    mapping_comparison = rbind(mapping_comparison, ref)
+    count_data_comparison = as.data.frame(data %>% dplyr::select(mapping_comparison$sample))
+    rownames(count_data_comparison)=data$gene_id
+    
+    dds <- DESeqDataSetFromMatrix(countData = count_data_comparison,
+                                  colData = mapping_comparison,
+                                  design= ~ condition)
+    dds <- DESeq(dds)
+    res <- results(dds)
+    results_df <- as.data.frame(res)
+    deseq_results_list[[paste0(knock, "_", con , "_VS_",  ref_string )]]=res
+  }
+}
+
+
+# Summarise comparisons
+# Here we make a list only containing significant results (definition may differ)
+deseq_signif_list=lapply(deseq_results_list, function(x)subset(x, padj<0.05 & abs(log2FoldChange)>1))
+print(deseq_results_list)
+
+# And compare the number of up/down regulated genes of the comparisons
+number_signif=data.table::rbindlist(lapply(names(deseq_signif_list),function(x)cbind(as.data.frame(table(sign(deseq_signif_list[[x]]$log2FoldChange))),name=x)))
+ggplot(number_signif,aes(x=Var1,y=Freq,fill=Var1))+geom_bar(stat="identity")+facet_wrap(~name)
+
+# And we can compare the genes in the different comparisons
+genes_signif=lapply(deseq_signif_list,function(x)rownames(x))
+UpSetR::upset(UpSetR::fromList(genes_signif), nsets = length(genes_signif),order.by = "freq",mb.ratio = c(0.3, 0.7),)
+
+
+fcs=do.call(cbind,(lapply(deseq_results_list,function(x)as.data.frame(x)["log2FoldChange"])))
+names(fcs)=names(deseq_results_list)
+fcs[is.na(fcs)]=0
+
+
+pvalues=do.call(cbind,(lapply(deseq_results_list,function(x)as.data.frame(x)["padj"])))
+names(pvalues)=names(deseq_results_list)
+fcs[pvalues>0.05]=0
+
+fcs$gene_id=rownames(fcs)
+```
+
+
+```{r Analyse}
+
+#Anzahl der Elemente
+lists=list(TF_HSF1,TF_MSN24,TF_HSF1_MSN24)
+names(lists)=c("Targets_HSF1","Targets_MSN24","Targets_HSF1+MSN24")
+
+UpSetR::upset(UpSetR::fromList(lists), nsets = length(lists),order.by = "freq",mb.ratio = c(0.3, 0.7),)
+
+#looping though gene set and extracting gene
+for(i in 1:length(lists)){
+  list_name=names(lists)[i]
+  target_list=lists[[i]]
+
+  fcs_melt=reshape2::melt( fcs,id.vars="gene_id")
+  
+#in gene list ? Target gene?
+  fcs_melt$is_target=fcs_melt$gene_id %in% target_list
+  
+  fcs_melt$comparison=unlist(lapply(fcs_melt$variable,function(x)gsub( ".*_(.*_.*_VS_)(.*)_(.*_.*)","\\1\\3",x)))
+  fcs_melt$knockout=factor(unlist(lapply(fcs_melt$variable,function(x)gsub( ".*_(.*_.*_VS_)(.*)_(.*_.*)","\\2",x))),levels=c("Wildtype","HSF1.KD","MSN24.KO","Double.KDKO"))
+  max_fc=max(abs(fcs_melt$value))
+  
+  #durch [fcs_melt$is_target, ]. wird nur true angezeigt, also nur für Targets und man kann Violins besser erkennen
+  gg=ggplot(fcs_melt,aes(x=comparison,y=value,fill=knockout))+
+    geom_violin(position=position_dodge(width = 0.5))+
+    scale_x_discrete(guide = guide_axis(angle = 45)) +theme(axis.text=element_text(size=7))+
+    #scale_y_continuous(limits = c(-max_fc,max_fc))+
+    facet_wrap(is_target~.,ncol=1)+
+    geom_hline(yintercept =0,linewidth=.2)+
+    ggtitle(list_name)
+  print(gg)
+}
+
+
+```
+
+# vocalno plots
+```{r vocalno plots}
+library(DESeq2)
+library(UpSetR)
+library(data.table)
+library(tidyverse)
+
+vulcano=function(resultsObject,title){
+  par(mar=c(5,5,5,5), cex=1.0, cex.main=1.4, cex.axis=1.4, cex.lab=1.4)
+  
+  with(resultsObject, plot(log2FoldChange, -log10(padj), pch=20, main=paste("Volcano plot\n",title), cex=1.0, xlab=bquote(~Log[2]~fold~change), ylab=bquote(~-log[10]~Q~adj~value)))
+  with(subset(resultsObject, padj<0.05 & abs(log2FoldChange)>1), points(log2FoldChange, -log10(padj), pch=20, col="red", cex=0.5))
+  
+
+  abline(v=0, col="black", lty=3, lwd=1.0)
+  abline(v=-1, col="black", lty=4, lwd=2.0)
+  abline(v=1, col="black", lty=4, lwd=2.0)
+  abline(h=-log10(0.05), col="black", lty=4, lwd=2.0)
+}
+
+# Read in data
+count_data=readr::read_tsv("complex_yeast_heatshock.tsv")
+mapping=readr::read_tsv("sample_mapping.tsv")
+
+
+# Compare references
+# Here we take the 25_0 time points and compare each knockout/down to the wildtype
+# Thanks to Felix Offensperger !
+
+mapping_roomtemp=mapping %>% filter(temperature=="25"&time=="0") 
+ref="Wildtype"
+knockouts=unique(mapping_roomtemp$knockout)
+
+comparisons=knockouts[knockouts != ref]
+
+
+deseq_results_list=list()
+
+# to have a quicker result--> plotting all 15 comparisons--> we can build a new list with all possible combinations 
+# Idea: Group Sabrina & Aurelia
+
+possible_combinations <- list(list(temperature = "25", time = "0"),
+                        list(temperature = "37", time = "10"), 
+                        list(temperature = "37", time = "30"), 
+                        list(temperature = "42", time = "10"), 
+                        list(temperature = "42", time = "30"))
+
+# now we can interate through that list --> create outer for loop 
+for(combination in possible_combinations){
+  position_temperature <- combination$temperature
+  position_time <- combination$time
+  #as one always needs the current temperature and time at that exact combination:
+  mapping_position <- mapping %>% filter(time == position_time & temperature == position_temperature)
+ 
+plot_list <- list() 
+for(comp in comparisons){
+  # for each comparison we only take the corresponding coldata and counts
+  #filter mapping data (important in DESeq as we always need mapping dataset)
+  mapping_comparison= mapping_position  %>% filter(knockout %in% c(ref,comp)) 
+  count_data_comparison = as.data.frame(count_data %>% dplyr::select(mapping_comparison$sample))
+  rownames(count_data_comparison)=count_data$gene_id
+  #then we run default deseq
+  dds <- DESeqDataSetFromMatrix(countData = count_data_comparison,
+                                colData = mapping_comparison,
+                                design= ~ knockout)
+  dds <- DESeq(dds)
+  res <- results(dds)
+  
+  vulcano(res,title= paste0(ref,"_VS_",comp, " (", position_temperature, "°C)"," at ", position_time, " minutes"))
+
+
+}
+
+}
+
+
+
+
+```
+
+
+
+
+
+
+# genes with the biggest foldchanges
+```{r interesting genes}
+
+genes_highexpressed <- c()
+for(i in 1:4){
+  DESeqRNA1 <- heatshockDESeq(RNA_data, i)
+  top10 <- filter(DESeqRNA1, row_number(desc(log2FoldChange)) <= 10)
+  ids <- rownames(top10)
+  genes_highexpressed <- append(genes_highexpressed, ids)
+}
+genes_highexpressed <- unique(genes_highexpressed)
+
+
+genes_open <- c()
+for(i in 1:4){
+  DESeqATAC1 <- ATACDESeq(ATAC_data, i)
+  top10 <- filter(DESeqATAC1, row_number(desc(log2FoldChange)) <= 10)
+  ids <- rownames(top10)
+  genes_open <- append(genes_open, ids)
+}
+genes_open <- unique(genes_open)
+
+interesting_genes <- c(genes_open, genes_highexpressed)
+interesting_genes <- unique(interesting_genes)
+
+
+hsps <- c("YLL026W", "YPL240C", "YBR072W", "YDR171W", "YOL052C-A", "YOR178C", "YCR021C", "YER103W")
+
+
+makelabeledplot <- function(ATAC_data, RNA_data, condition, highlights, gene_id){
+    join_ATAC_RNA <- calculateDESeq(ATAC_data, RNA_data, condition)
+    highlights_data <- join_ATAC_RNA %>% filter(gene_id %in% highlights)
+    title <- switch(condition, "25/37_10", "25/37_30", "25/42_10", "25/42_30")
+    title <- paste("foldchanges of the same gene ", title, sep=" ")
+    g <- ggplot(join_ATAC_RNA, aes(x = log2FoldChange.x, y = log2FoldChange.y)) +
+      geom_point() +
+      geom_point(data = highlights_data, aes(color = gene_id), size = 2) + 
+      geom_hline(yintercept=0, linetype="dashed", color = "blue") +
+      geom_vline(xintercept=0, linetype="dashed", color = "blue") +
+      labs(title = "Plot of foldchanges with highlights of chaperone genes",
+      y = "foldchanges of RNA data",
+      x = "foldchanges of ATAC data")
+    return(g)
+}
+
+
+g <- makelabeledplot(ATAC_data, RNA_data, 1, interesting_genes, interesting_genes)
+
+g <- makelabeledplot(ATAC_data, RNA_data, 1, highexpressed, highexpressed)
+
+
+```
+
+
+## General GSEA for Targets of HSF1 and MSN24
+```{r echo=TRUE}
+
+lists=list(TF_HSF1,TF_MSN24,TF_HSF1_MSN24)
+names(lists)=c("Targets_HSF1","Targets_MSN24","Targets_HSF1+MSN24")
+library(org.Sc.sgd.db)
+library(clusterProfiler)
+library(ReactomePA)
+
+get_entrez_ids <- function(lists){
+  entrez_ids <- AnnotationDbi::select(org.Sc.sgd.db, keys= lists,column = "ENTREZID", keytpe="GENENAME")
+  return(entrez_ids)
+}
+
+for(list_name in names(lists)){
+  gene_list <- lists[[list_name]]
+  entrez_ids <- get_entrez_ids(gene_list)
+  enrichment_result <- enrichPathway(gene = entrez_ids$ENTREZID, organism = "yeast")
+  print(paste("Targets for", list_name))
+  target_names <- entrez_ids$ORF
+  pathway_names <- as.character(enrichment_result$Description)
+  enrichment_result
+  for (i in seq_along(target_names)) {
+  target_name <- target_names[i]
+  current_pathway_name <- pathway_names[i]
+  print(paste("Gen-Namen:", target_names[i], "für den Pathway:", pathway_names[i]))
+  }
+  print(dotplot(enrichment_result, showCategory = 10, title = list_name))
+}
+
+```
+
+
+## GSEA results
+```{r echo=TRUE}
+enrich_HSF1 <- read_csv("Enrichment_Results_for_Targets_HSF1.csv")
+chaperone <- enrich_HSF1$GeneIDs[1]
+list_of_chaperone <- unlist(strsplit(chaperone, split = "/"),use.names=FALSE)
+list_of_chaperone <- mapIds(org.Sc.sgd.db, keys=list_of_chaperone, column="ORF", keytype="ENTREZID", multiVals="first")
+
+attenuation <- enrich_HSF1$GeneIDs[3]
+list_of_attenuation <- unlist(strsplit(attenuation, split = "/"),use.names=FALSE)
+list_of_attenuation <- mapIds(org.Sc.sgd.db, keys=list_of_attenuation, column="ORF", keytype="ENTREZID", multiVals="first")
+
+
+test <- enrich_HSF1$GeneIDs[5]
+list <- unlist(strsplit(test, split = "/"),use.names=FALSE)
+list <- mapIds(org.Sc.sgd.db, keys=list, column="ORF", keytype="ENTREZID", multiVals="first")
+
+
+makeplot2 <- function(join_ATAC_RNA, highlights, targets, highlights2, targets2){
+  highlights <- join_ATAC_RNA %>% filter(gene_id %in% highlights)
+  highlights2 <- join_ATAC_RNA %>% filter(gene_id %in% highlights2)
+  title <- "foldchanges of the same gene from ATAC and heat shock data"
+  ggplot(join_ATAC_RNA, aes(x = log2FoldChange.x, y = log2FoldChange.y), size = 0.5) +
+      geom_point() +
+      geom_point(data = highlights, aes(color = targets), size = 2) + 
+      geom_point(data = highlights2, aes(color = targets2), size = 2) + 
+      geom_hline(yintercept=0, linetype="dashed", color = "blue") +
+      geom_vline(xintercept=0, linetype="dashed", color = "blue") +
+      labs(x = "ATAC", y = "heat shock", title = title) +
+      facet_wrap(vars(condition))
+}
+
+makeplot3 <- function(join_ATAC_RNA, highlights, targets, highlights2, targets2, highlights3, targets3){
+  highlights <- join_ATAC_RNA %>% filter(gene_id %in% highlights)
+  highlights2 <- join_ATAC_RNA %>% filter(gene_id %in% highlights2)
+  highlights3 <- join_ATAC_RNA %>% filter(gene_id %in% highlights3)
+  title <- "foldchanges of the same gene from ATAC and heat shock data"
+  ggplot(join_ATAC_RNA, aes(x = log2FoldChange.x, y = log2FoldChange.y), size = 0.5) +
+      geom_point() +
+      geom_point(data = highlights, aes(color = targets), size = 2) + 
+      geom_point(data = highlights2, aes(color = targets2), size = 2) + 
+      geom_point(data = highlights3, aes(color = targets3), size = 2) + 
+      geom_hline(yintercept=0, linetype="dashed", color = "blue") +
+      geom_vline(xintercept=0, linetype="dashed", color = "blue") +
+      labs(x = "ATAC", y = "heat shock", title = title) +
+      facet_wrap(vars(condition))
+}
+
+heat <- c("YLL026W", "YPL240C", "YBR072W", "YDR171W")
+
+
+
+
+g <- makeplot2(DEseqdf, TF_HSF1, "targets of HSF1", list_of_chaperone, "chaperones")
+g <- makeplot2(DEseqdf, TF_HSF1, "targets of HSF1", list_of_attenuation, "attenuation")
+
+
+g <- makeplot2(DEseqdf, TF_HSF1, "targets of HSF1", list_of_chaperone, "chaperones")enrich_HSF1MSN24 <- read_csv("Enrichment_Results_for_Targets_HSF1MSN24.csv")
+metabolism <- enrich_HSF1MSN24$GeneIDs[3]
+list_of_metabolism <- unlist(strsplit(metabolism, split = "/"),use.names=FALSE)
+list_of_metabolism <- mapIds(org.Sc.sgd.db, keys=list_of_metabolism, column="ORF", keytype="ENTREZID", multiVals="first")
+
+heatstress2 <- enrich_HSF1MSN24$GeneIDs[5]
+list_of_heatstress2 <- unlist(strsplit(heatstress2, split = "/"),use.names=FALSE)
+list_of_heatstress2 <- mapIds(org.Sc.sgd.db, keys=list_of_heatstress2, column="ORF", keytype="ENTREZID", multiVals="first")
+
+
+g2 <- makeplot3(DEseqdf, TF_HSF1_MSN24, "targets of HSF1 \n and MSN24", list_of_metabolism, "metabolism of \n carbohydrates", list_of_heatstress2, "heat stress")
+
+
+
+
+enrich_MSN24 <- read_csv("Enrichment_Results_for_Targets_MSN24.csv")
+metabolism <- enrich_MSN24$GeneIDs[4]
+list_of_metabolism <- unlist(strsplit(metabolism, split = "/"),use.names=FALSE)
+list_of_metabolism <- mapIds(org.Sc.sgd.db, keys=list_of_metabolism, column="ORF", keytype="ENTREZID", multiVals="first")
+
+stress2 <- enrich_MSN24$GeneIDs[18]
+list_of_stress2 <- unlist(strsplit(heatstress2, split = "/"),use.names=FALSE)
+list_of_stress2 <- mapIds(org.Sc.sgd.db, keys=list_of_stress2, column="ORF", keytype="ENTREZID", multiVals="first")
+
+
+g3 <- makeplot3(DEseqdf, TF_MSN24, "targets of MSN24", list_of_metabolism, "metabolism", list_of_stress2, "stress response")
+
+```
+
+
+## lineplot
+```{r echo=TRUE}
+line_plot_multiple_genes <- function(gene_ids) {
+  # Vorübergehende Liste, um Daten für alle Gene zu sammeln
+  all_genes_data <- list()
+
+  for (gene_id in gene_ids) {
+    gene_data <- heatshock[heatshock$gene_id == gene_id,]
+    # Sortieren der Spaltennamen, falls nötig
+    order <- order(colnames(gene_data))
+    gene_data <- gene_data[order]
+    # Mittelwerte für jede Bedingung berechnen
+    means_df <- data.frame(matrix(nrow = nrow(gene_data), ncol = 20))
+    for (i in 1:20) {
+      start_col <- (i - 1) * 3 + 2
+      end_col <- i * 3 + 1
+      means_df[, i] <- rowMeans(gene_data[, start_col:end_col], na.rm = TRUE)
+    }
+    # Spaltennamen zuweisen
+    colnames(means_df) <- colnames(gene_data)[seq(from = 2, to = 59, by = 3)]
+    # Langformat für ggplot
+    long <- means_df %>% 
+      pivot_longer(cols = everything(), names_to = "condition", values_to = "value") %>%
+      mutate(Gene = gene_id)
+    all_genes_data[[gene_id]] <- long
+  }
+
+  combined_data <- bind_rows(all_genes_data)
+
+  g <- ggplot(data = combined_data, aes(x = condition, y = log(value), color = Gene, group = Gene)) +
+    geom_line() +
+    geom_point() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    labs(title = "Expression over Conditions")
+
+  return(g)
+}
+
+
+highexpressed <- c("YLL026W", "YBR072W", "YPL240C", "YDR171W")
+
+g <- line_plot_multiple_genes(highexpressed)
+
+g2 <- line_plot_multiple_genes(mychaperones)
+
+
+```
+
+```{r echo=TRUE}
+print(TF_HSF1)
+```

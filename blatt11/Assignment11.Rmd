@@ -1,0 +1,159 @@
+---
+title: "Assignment11"
+author: "Anna Lisa and Wenjia"
+date: "2023-07-05"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+survey<- read.csv("basic_yeast_heatshock.csv", header=TRUE)
+library(dplyr)
+library(tidyverse)
+```
+
+##Task 1: MSMB 05
+
+Clustering is a useful technique for understanding complex multivariate
+data; it is unsupervised machine learning --\> Clustering is more
+general than EM-algorithm, and can be applied to more complex data
+
+What is similar ? Different approaches: Euclidean distance
+(d(A,B)=Wurzel((a1-b1)\^2 + ....)), Manhattan Block ( distance takes the
+sum of the absolute differences in all coordinates), Maximum, weighted
+Euklidean distance, Binary und viele viele mehr
+
+## k-means method:
+
+1.  Starts from a matrix of features measured on a set of observations.
+
+2.  Randomly pick distinct cluster centers out of the observations
+    ("seeds").
+
+3.  Assign each of the remaining observation to the group to whose
+    center it is the closest.
+
+4.  For each group, choose a new center from the observations in the
+    group, such that the sum of the distances of group members to the
+    center is minimal; this is called the medoid.
+
+5.  Repeat Steps 3 and 4 until the groups stabilize.
+
+## Density-based clustering
+
+This method looks for regions of high density separated by sparser
+regions. It has the advantage of being able to cope with clusters that
+are not necessarily convex --\> we know DBSCAN
+
+How does it work? concept of density-reachability: a point q is directly
+density-reachable from a point p if it is not further away than a given
+threshold ,and if p is surrounded by sufficiently many points such that
+one may consider p (and q) be part of a dense region
+
+A cluster is then a subset of points that satisfy the following
+properties:
+
+1.  All points within the cluster are mutually density-connected.
+
+2.  If a point is density-connected to any point of the cluster, it is
+    part of the cluster as well.
+
+3.  Groups of points must have at least MinPts points to count as a
+    cluster.
+
+--\> hierarchal clustering is also possible, self explaining (talked
+about in Bioinformatik 2)
+
+## How could clustering methods be applied in the analysis we conducted in the previous assignments?
+
+\--\> in general: find structures and relationships and visualize them!
+
+-   Pattern discovery e.g. in the heatshock
+
+-   Classification and Visualization e.g. in yeastract
+
+-   Data Reduction (reduce complexity)
+
+
+## Task 2: Clustering
+```{r echo=TRUE}
+head(survey)
+```
+```{r echo=TRUE}
+data <- survey
+data$gene_id <- NULL
+rownames(data) = survey$gene_id
+data_matrix <- as.matrix(log(data+1))
+heatmap(data_matrix)
+```
+
+## Top 50 highest expressed genes based on row sums
+
+```{r echo=TRUE}
+data$sums <- rowSums(data)
+top_fifty <- data %>%
+         filter(rank(desc(sums))<=50)
+top_fifty$sums = NULL
+top_fifty = as.matrix(log(top_fifty+1))
+heatmap(top_fifty)
+data$sums = NULL
+```
+
+## Top 50 changing genes determined by the maximum absolute difference between the means of 10min and 0min and the means of 30min and 10min.
+```{r echo=TRUE}
+data$dif <- abs(rowMeans(data[1:3]) - rowMeans(data[4:6])) + abs(rowMeans(data[4:6]) - rowMeans(data[7:9]))
+top_fifty2 <- data %>%
+         filter(rank(desc(dif))<=50)
+top_fifty2$dif = NULL
+top_fifty2 = as.matrix(log(top_fifty2+1))
+heatmap(top_fifty2)
+data$dif = NULL
+
+```
+
+## Top 50 non-changing genes identified by the minimum absolute difference between the means of 10min and 0min and the means of 30min and 10min. Exclude genes that have not been measured at all.
+```{r echo=TRUE}
+measured <- data[rowSums(data[])>0,]
+measured$dif <- abs(rowMeans(measured[1:3]) - rowMeans(measured[4:6])) + abs(rowMeans(measured[4:6]) - rowMeans(measured[7:9]))
+top_fifty3 <- measured %>%
+         filter(rank(desc(dif))>=6404)
+top_fifty3$dif = NULL
+top_fifty3 = as.matrix(log(top_fifty3+1))
+heatmap(top_fifty3)
+
+```
+
+## Top 50 genes that only show changes at the beginning, determined by the maximum absolute difference between the means of 10min and 0min and the minimum absolute difference between the means of 30min and 10min.
+
+```{r echo=TRUE}
+data$dif <- abs(rowMeans(data[1:3]) - rowMeans(data[4:6])) - abs(rowMeans(data[4:6]) - rowMeans(data[7:9]))
+top_fifty2 <- data %>%
+         filter(rank(desc(dif))<=50)
+top_fifty2$dif = NULL
+top_fifty2 = as.matrix(log(top_fifty2+1))
+heatmap(top_fifty2)
+data$dif = NULL
+
+```
+
+## Clustering and heatmap using pheatmap
+
+```{r echo=TRUE}
+library(pheatmap)
+row_clusters <- hclust(dist(data_matrix))
+column_clusters <- hclust(dist(t(data_matrix))) 
+pheatmap(data_matrix,
+         clustering_method = "complete",  # Method used for clustering
+         cluster_rows = TRUE,  # Perform row clustering
+         cluster_cols = TRUE,  # Perform column clustering
+         row_cluster_dist = "euclidean",  # Distance metric for row clustering
+         col_cluster_dist = "euclidean",  # Distance metric for column clustering
+         row_dendrogram = TRUE,  # Display row dendrogram
+         col_dendrogram = TRUE,  # Display column dendrogram
+         color = colorRampPalette(c("blue", "white", "red"))(100))  # Color palette for heatmap
+
+
+```

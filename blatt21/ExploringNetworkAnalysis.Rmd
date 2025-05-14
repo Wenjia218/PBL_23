@@ -1,0 +1,311 @@
+---
+title: "Exploring Network Analysis"
+author: "Wenjia und Anna Lisa"
+output: html_document
+date: "2023-11-9"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## MSMB 10 Networks and Trees
+
+-   Networks are often used to represent interactions, similarities or relationships between e.g. Proteins or Transcription factors
+-   graph-\> combination of (V, E)
+-   V= node (circles) E= edge (connection)
+-   directed and undirected graphs are known keypoints ;)
+-   depending on the topic the length of the edge may or may not be important
+-   degree of a node: number of edges connedted to it
+-   in-degree & out-degree in directed graphs
+-   Graphs are often used as a great tool for visualisation
+
+```{r echo=TRUE}
+library("igraph")
+edges = matrix(c(1,3, 2,3, 3,4, 4,5, 4,6), byrow = TRUE, ncol = 2)
+g1 = graph_from_edgelist(edges, directed = FALSE)
+vertex_attr(g1, name = "name") = 1:6
+plot(g1, vertex.size = 25, edge.width = 5, vertex.color = "coral")
+```
+
+## From gene set enrichment to networks
+
+-   Methods using pre-defined gene sets (GSEA)
+    -   look for gene attributes that are overrepresented or enriched (in significant genes)
+    -   based on Gene Ontology (prespecified vocabulary)
+-   Gene set analysis with two-way table test
+    -   Fisher\`s "exact" test / hypergeometric testing
+    -   define universe of candidate genes that may potentially be significant (N)
+    -   m would be the ones that turned out to be significant
+    -   what is the probability that a random gene is significant
+-   Significant subgraphs and high scoring modules
+    -   Each gene-node in the network is assigned a score that can either be calculated from a t-statistic or a p-value
+    -   pathways contain both upregulated and downregulated genes -\> can be captured by taking absolute values of the test statistic or incorporating scores computed from the p-values
+    -   using node-scoring function, we search for connected hotspots in the graph, i.e., a subgraph of genes with high combined scores --\> often subgraph search algorithms are used
+
+## Gene set analysis with two-way table tests
+
+#Fisher's "exact" test
+
+```{r echo=TRUE}
+library("GOplot")
+data("EC")
+circ  =  circle_dat(EC$david, EC$genelist) 
+#EC$david --> enrichment scores for each gene and process.
+#EC$genelist --> gene names.
+#circle_dat calculates the circular layout for genes based on their enrichment scores. 
+chord =  chord_dat(circ, EC$genes, EC$process)
+GOChord(chord, limit = c(0, 5)) #creates a chord diagram to visualize the relationships between genes and processes.
+
+```
+
+## Key Points- Phylogenetic Trees:
+
+-   Phylogenetic trees are constructed to represent the evolutionary relationships between different species or populations.
+-   These trees are usually rooted binary trees with contemporary taxa (Operational Taxonomic Units or OTUs) at the tips.
+-   The construction of phylogenetic trees involves making assumptions about how substitutions and deletions occur through time, and Markovian models are often used for this purpose.
+-   The molecular clock hypothesis assumes a constant mutation rate over time, allowing for the estimation of ancestral sequences.
+-   Different models, such as the Jukes-Cantor, Kimura, and Generalized Time Reversible (GTR) models, can be used to describe the probability of mutations.
+
+## Code example:
+
+```{r echo=TRUE}
+# install.packages("ape")
+
+library(ape)
+# zufällige Distanzmatrix
+set.seed(123)
+dist_matrix <- matrix(runif(25), nrow = 5)
+# neighbor-joining-Algorithmus
+tree <- nj(dist_matrix)
+plot(tree, main = "Phylogenetic Tree (Neighbor-Joining)", cex = 0.8)
+
+```
+
+## Combining phylogenetic trees into a data analysis- Step by Step:
+
+-   Data Integration:
+
+    -   Combining phylogenetic tree, denoised read abundances, and sample metadata.
+    -   Metadata often provided as a spreadsheet (CSV) containing sample information.
+    -   Data Cleanup and Reorganization:
+
+-   Cleaning and organizing data for statistical analysis.
+
+    -   Creation of a phyloseq object (ps1) for integrated analysis.
+
+-   Code Steps:
+
+    -   Importing sample information from a CSV file.
+    -   Creating unique SampleID based on host_subject_id and age.
+    -   Organizing and filtering data columns for relevant information.
+    -   Combining data components into a phyloseq object (pso).
+
+-   Data Exploration and Filtering:
+
+    -   Utilizing phyloseq functions for data exploration.
+    -   One-liner code for creating a subset containing tree, taxa abundance table, sample, and taxa information for samples with more than 5000 reads.
+
+-   Additional Data Transformations:
+
+    -   Applying filtering operations while maintaining data integrity.
+    -   Generating prevalence and abundance information for taxa.
+
+-   Normalization and Testing:
+
+    -   Using the DESeq2 package for normalization.
+    -   Applying structSSI package for hierarchical testing.
+    -   Shortening taxa names for convenient printing.
+
+-   Interactive Visualization:
+
+-   Result Interpretation:
+
+    -   Understanding the significance of associations.
+
+## Minimum spanning trees
+
+-   Simple and efficient for connecting vertices with minimum total length.
+-   Greedy algorithms, multiple R implementations.
+-   Skeleton graphs
+-   --\> useful part
+
+## Summary
+
+-   Annotated graphs
+
+    -   In this chapter we have learnt how to store and plot data that have more structure than simple arrays: graphs have edges and nodes that can also be associated to extra annotations that can be displayed usefully.
+
+-   Important examples of graphs and useful R packages We started by specific examples such as Markov chain graphs, phylogenetic trees and minimum spanning trees. We saw how to use the ggnetwork and igraph packages to visualize graphs and show as much information as possible by using specific graph layout algorithms.
+
+-   Combining graphs with statistical data We then approached the problem of incorporating a known \`skeleton' graph into differential expression analyses. This enables use to pinpoint perturbation hotspots in a network. We saw how evolutionary models defined along rooted binary trees serve as the basis for phylogenetic tree estimation and how we can incorporate these trees as supplementary information in a differential abundance analysis using the R packages structSSI and phyloseq.
+
+-   Linking co-occurrence to other variables Graph and network tools also enable the creation of networks from co-occurrence data and can be used to visualize and test the effect of factor covariates. We saw the Friedman-Rafsky test which provides an easy way of testing dependencies of a variable with the edge structure of a skeleton graph.
+
+-   Context and intepretation aids
+
+    -   This chapter illustrated ways of incorporating interactions of players in a network and we saw how useful it was to combine this with statistical scores. This often provides biological insight into analyses of complex biological systems.
+
+-   Previous knowledge or outcome We saw that graphs can be both useful to encode our previous knowledge, metabolic network information, gene ontologies and phylogenetic trees of known bacteria are all available in standard databases. It is beneficial in a study to incorprate all known information and doing so by combining these skeleton networks with observed data enhances our understanding of experimental results in the context of what is already known.
+
+-   On the other hand, the graph can be the outcome that we want to predict and we saw how to build graphs from data (phylogenetic trees, co-occurrence networks and minimum spanning trees). \## RCy3 package
+
+## get familiar with cytoscape
+
+```{r echo=TRUE}
+library(RCy3)
+lesmis <- system.file("extdata","lesmis.txt", package="RCy3")
+dataSet <- read.table(lesmis, header = FALSE, sep = "\t")
+gD <- igraph::simplify(igraph::graph.data.frame(dataSet, directed=FALSE))
+igraph::vcount(gD)
+igraph::ecount(gD)
+degAll <- igraph::degree(gD, v = igraph::V(gD), mode = "all")
+betAll <- igraph::betweenness(gD, v = igraph::V(gD), directed = FALSE) / (((igraph::vcount(gD) - 1) * (igraph::vcount(gD)-2)) / 2)
+betAll.norm <- (betAll - min(betAll))/(max(betAll) - min(betAll))
+rm(betAll)
+dsAll <- igraph::similarity.dice(gD, vids = igraph::V(gD), mode = "all")
+gD <- igraph::set.vertex.attribute(gD, "degree", index = igraph::V(gD), value = degAll)
+gD <- igraph::set.vertex.attribute(gD, "betweenness", index = igraph::V(gD), value = betAll.norm)
+summary(gD)
+F1 <- function(x) {data.frame(V4 = dsAll[which(igraph::V(gD)$name == as.character(x$V1)), which(igraph::V(gD)$name == as.character(x$V2))])}
+dataSet.ext <- plyr::ddply(dataSet, .variables=c("V1", "V2", "V3"), function(x) data.frame(F1(x)))
+
+gD <- igraph::set.edge.attribute(gD, "weight", index = igraph::E(gD), value = 0)
+gD <- igraph::set.edge.attribute(gD, "similarity", index = igraph::E(gD), value = 0)
+for (i in 1:nrow(dataSet.ext))
+{
+    igraph::E(gD)[as.character(dataSet.ext$V1) %--% as.character(dataSet.ext$V2)]$weight <- as.numeric(dataSet.ext$V3)
+    igraph::E(gD)[as.character(dataSet.ext$V1) %--% as.character(dataSet.ext$V2)]$similarity <- as.numeric(dataSet.ext$V4)
+}
+rm(dataSet,dsAll, i, F1)
+
+createNetworkFromIgraph(gD,new.title='Les Miserables')
+
+getLayoutNames()
+getLayoutPropertyNames("fruchterman-rheingold")
+layoutNetwork('fruchterman-rheingold gravity_multiplier=1 nIterations=10')
+layoutNetwork('force-directed defaultSpringLength=70 defaultSpringCoefficient=0.000003')
+
+```
+
+```{r,message=FALSE, warning=FALSE}
+library(RCy3)
+library(igraph)
+library(plyr)
+cytoscapePing() #connecting to cytoscape
+cytoscapeVersionInfo() 
+#defining the nodes
+nodes <- data.frame(id=c("node 0","node 1","node 2","node 3"),
+           group=c("A","A","B","B"), # categorical strings
+           score=as.integer(c(20,10,15,5)), # integers
+           stringsAsFactors=FALSE)
+
+#defining the edges
+edges <- data.frame(source=c("node 0","node 0","node 0","node 2"),#where the edges start
+           target=c("node 1","node 2","node 3","node 3"), #where the edges end
+           interaction=c("inhibits","interacts","activates","interacts"),  # optional
+           weight=c(5.1,3.0,5.2,9.9), # numeric
+           stringsAsFactors=FALSE)
+
+createNetworkFromDataFrames(nodes,edges, title="my first network", collection="DataFrame Example")
+
+#setVisualStyle('Marquee') #directed network which shows the kind of interaction
+
+
+style.name = "myStyle"
+defaults <- list(NODE_SHAPE="diamond",
+                 NODE_SIZE=30,
+                 EDGE_TRANSPARENCY=120,
+                 NODE_LABEL_POSITION="W,E,c,0.00,0.00") 
+nodeLabels <- mapVisualProperty('node label','id','p')
+
+nodeFills <- mapVisualProperty('node fill color','group','d',c("A","B"), c("#FF9900","#66AAAA")) #Einfärbung nach Gruppe A oder B
+
+arrowShapes <- mapVisualProperty('Edge Target Arrow Shape','interaction','d',c("activates","inhibits","interacts"),c("Arrow","T","None"))# bspw.: activation will have an arrow shape
+
+edgeWidth <- mapVisualProperty('edge width','weight','p') #edge width will ne determined by the weight attribute
+
+createVisualStyle(style.name, defaults, list(nodeLabels,nodeFills,arrowShapes,edgeWidth))
+setVisualStyle(style.name)
+
+```
+
+```{r echo=TRUE}
+dataTF <- read.table("/Users/annalisaheit/Desktop/PBL/string_interactions.tsv")
+# namen hinzugefügt
+new_colnames <- c("node1", "node2", "node1_string_id", "node2_string_id", "neighborhod_chromosome", "gene_fusion", "phylogenetic_cooccurrence", "homology", "coexpression", "experomentally_determindes_interaction", "database_annotated", "automated_textmining", "combined_score")
+colnames(dataTF)<- new_colnames
+write.table(dataTF, "neueDataTF.tsv", sep= "\t", quote = FALSE, row.names =FALSE)
+head(dataTF)
+library(dplyr)
+library(tidyverse)
+filtered_data_MSN2 <- dataTF %>% filter(node1 == "MSN2") %>% select(-node1_string_id) %>% select(-node2_string_id) %>% select(-neighborhod_chromosome) %>% select(-gene_fusion) %>% select(-database_annotated)  %>% select(-phylogenetic_cooccurrence) %>% select(-automated_textmining) %>% select(-combined_score)
+head(filtered_data_MSN2)
+filtered_data_MSN4 <- dataTF %>% filter(node1 == "MSN4") %>% select(-node1_string_id) %>% select(-node2_string_id) %>% select(-neighborhod_chromosome) %>% select(-gene_fusion) %>% select(-phylogenetic_cooccurrence) %>% select(-database_annotated) %>% select(-automated_textmining) %>% select(-combined_score)
+head(filtered_data_MSN4)
+filtered_data_MSN2 <- dataTF %>% filter(node1 == "MSN2") %>% select(-node1_string_id) %>% select(-node2_string_id) %>% select(-neighborhod_chromosome) %>% select(-gene_fusion) %>% select(-database_annotated)  %>% select(-phylogenetic_cooccurrence) %>% select(-automated_textmining) %>% select(-combined_score)
+head(filtered_data_MSN2)
+filtered_data_MSN4 <- dataTF %>% filter(node1 == "MSN4") %>% select(-node1_string_id) %>% select(-node2_string_id) %>% select(-neighborhod_chromosome) %>% select(-gene_fusion) %>% select(-phylogenetic_cooccurrence) %>% select(-database_annotated) %>% select(-automated_textmining) %>% select(-combined_score)
+head(filtered_data_MSN4)
+cytoscapePing()
+
+head(unique(filtered_data_MSN2$node1))
+nodes <- unique(filtered_data_MSN2$node1)
+edges <- unique(filtered_data_MSN2$node2)
+head(edges)
+node <- unique(c(filtered_data_MSN2$node1, filtered_data_MSN2$node2))
+graph <- graph_from_data_frame(d= filtered_data_MSN2, directed=FALSE, vertices = node)
+
+createNetworkFromIgraph(graph, title="Gene-InteractionMSN2")
+
+layoutNetwork("force-directed")
+
+cytoscapePing()
+
+head(unique(filtered_data_MSN4$node1))
+nodes <- unique(filtered_data_MSN4$node1)
+edges <- unique(filtered_data_MSN4$node2)
+head(edges)
+node <- unique(c(filtered_data_MSN4$node1, filtered_data_MSN4$node2))
+graph <- graph_from_data_frame(d= filtered_data_MSN4, directed=FALSE, vertices = node)
+
+createNetworkFromIgraph(graph, title="Gene-InteractionMSN4")
+
+layoutNetwork("force-directed")
+```
+
+```{r echo=TRUE}
+library(BiocManager)
+library(RCy3)
+library(igraph)
+library(dplyr)
+
+#Get the data from yeastract
+YEASTRACT <- read.delim("/Users/annalisaheit/Downloads/yeastract2019-flat-file.tsv")
+head(YEASTRACT)
+new_names <- c( "Regulator systematic", "Regulator standard", "Target systematic", "Target standard", "Id", "Date", "Environment", "Regulation", "Type", "Method")
+colnames(YEASTRACT) <- new_names
+head(YEASTRACT)
+
+#prepare the dataframe for HSF1 and ABF1
+HSF1 <-
+    YEASTRACT %>% filter(`Regulator standard` == "HSF1")
+ABF1 <-
+  YEASTRACT %>% filter(`Regulator standard` == "ABF1")
+
+#get dataframe from TFLink
+TFLink <- read.delim("/Users/annalisaheit/Downloads/TFLink_Saccharomyces_cerevisiae_interactions_SS_simpleFormat_v1.0.tsv")
+TF_HSF1 <-
+  TFLink %>% filter(`Name.TF` == "HSF1")
+TF_HSF1 <- TF_HSF1[,5:15]
+TF_ABF1 <-
+  TFLink %>% filter(`Name.TF` == "ABF1")
+TF_ABF1 <- TF_ABF1[,5:15]
+
+#prepare data for the network
+nodesHSF1 <- levels(factor(as.vector(TF_HSF1[,2])))
+nodesHSF1 <- append(nodesHSF1, "HSF1")
+ig <- graph_from_data_frame(TF_HSF1, directed=FALSE, vertices=nodesHSF1)
+createNetworkFromIgraph(ig,"myIgraphHSF1")
+
+```
