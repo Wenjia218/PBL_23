@@ -1,4 +1,7 @@
 
 This is the R repository for Problem based learning 2023-2024.
 
+The topic of the project is Gene regulation and the gene expression data of DNAs in Saccharomyces cerevisiae under different condition (temperatures, gene knock down, gene knock out) were used.
+It is focused on how specific heat shock factors can affect the gene regulation in yeast.
+
 All work done together by Wenjia Zhong and Anna Lisa Heit.

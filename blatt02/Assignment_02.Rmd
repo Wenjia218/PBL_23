@@ -1,0 +1,121 @@
+---
+title: "Assignment-02"
+output: ioslides_presentation
+date: "2023-05-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+gtf <- rtracklayer::import('Saccharomyces_cerevisiae.R64-1-1.75.gtf')
+gtf_df=as.data.frame(gtf)
+gtf_gene <- gtf_df[gtf_df$type == "gene", ]
+```
+
+## Task 1
+
+## What R commands are used, what parameters are used for them, and what effect does changing them have?
+
+Poisson model -\> dpois(x=3, lambda=5) ; x and lambda ; different Poisson distribution or e.g. by changing x to a vector one gets the probability for each part of the vector
+
+barplot(dpois(0:12, 5), names.arg =0:12, col= "red") ; what distribution, names of x row and color of columns ; other parameters = different plot
+
+c() -\> list of values table () -\> table for a e.g. vector
+
+levels() -\> shows of which structures a vector consists e.g. 'AA'
+
+rbinom(15, prob = 0.5, size=1) ; trials, prob, size ; different distribution
+
+set.seed() -\> initialize a pseudorandom number generator
+
+round(numer, 2) -\> what and how many decimal digits ; less or more precise number
+
+ppois(6, 0.5) -\> cumulative distribution ; X and probability ; different distribution
+
+max() -\> the maximum of different plots
+
+mean() -\> average
+
+rmultinom(1, prob = pvec, size=8) -\> n - number of random vectors to draw, prob - numeric non-negative vector of length (pvec as a variable in this case), size ; different distribution
+
+dim() -\> checks for the dimension, i.e, the number of rows and columns present in a data frame
+
+sum() -\> calculates the sum
+
+summary() -> gives out the Min. , 1st Quartile, Meidan, Mean, 3rd Quartile and Max.
+
+quantile(S0, probs = 0.95) -> data and at what value to separate ; differnt Quantiles would be the outcome if changing the probs
+
+
+
+
+## What functions did you not understand?
+stat = function(obsvd, exptd = 20* pvec){
+sum((obsvd - exptd)^2 / exptd)
+}
+stat(obsunder0[, 1])
+
+stat()
+## Task 2
+
+## What is written in a gtf file ?
+
+It is a "simple tab-delimited text file for describing genomic feautures" -\> information about gene structure is written in a gtf file
+
+## Structure of the file
+
+" consists of "one line per feauture, each containing 9 columns of data, plus optional track definition lines." 
+column 1. seqname - name of chromosome or scaffold 
+column 2 source - name of program that generated this feature, or data source 
+column 3 feature - feature type name, e.g. exon 
+column 4 start - start position of the feauture (starting with 1) 
+column 5 end - end position of the feature 
+column 6 score - floating point value 
+column 7 strand - defined as + (forward) or - (reverse) 
+column 8 frame - '0', '1' or '2'. ('0' indicates that the first base of the feature is the first base of a codon and so on) 
+column 9 attribute - A semicolon-separated list of tag-value pairs, providing additional information about each feature "
+
+## Can you draw the relationship of the contained features ? Yes, looking at the third column
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
+## Sources
+
+<https://en.wikipedia.org/wiki/Gene_transfer_format#>:\~:text=The%20Gene%20transfer%20format%20(GTF,conventions%20specific%20to%20gene%20information. <https://www.ensembl.org/info/website/upload/gff.html> <https://www.ensembl.org/info/website/upload/gff.html?redirect=no>
+
+
+## How many genes are in the gtf?
+```{r countgene, echo = TRUE}
+sum(gtf_df$type == 'gene')
+```
+
+
+## What is the discrete distribution of the features source and types?
+```{r distribution, echo = TRUE}
+sum(gtf_df$source == 'ensembl')/42071
+sum(gtf_df$type == 'gene')/42071
+sum(gtf_df$type == 'transcript')/42071
+sum(gtf_df$type == 'exon')/42071
+sum(gtf_df$type == 'CDS')/42071
+sum(gtf_df$type == 'start_codon')/42071
+sum(gtf_df$type == 'stop_codon')/42071
+```
+
+
+## Are genes equally distributed across the chromosomes?
+```{r distribution, echo = TRUE}
+cat("No")
+cat(gtf_gene$start)
+cat(gtf_gene$end)
+hist(gtf_gene$start, xlab = "position",col = "yellow",border = "blue")
+hist(gtf_gene$end, xlab = "position",col = "yellow",border = "blue")
+```

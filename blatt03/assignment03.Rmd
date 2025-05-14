@@ -1,0 +1,336 @@
+---
+title: "Assignment-03"
+output: 
+  slidy_presentation: default
+  powerpoint_presentation: default
+  ioslides_presentation: default
+date: "2023-05-10"
+author: "Wenjia and Anna"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+survey<- read.csv("basic_yeast_heatshock.csv", header=TRUE)
+
+```
+
+## Task 1
+
+## New functions in Chapter 2.5 - 2.7 of MSMB Huber:
+
+read fasta file: library("Biostrings") staph =
+readDNAStringSet("../data/staphsequence.ffn.txt", "fasta")
+
+look at the x's object: staph[x]
+
+get the frequencies of bases: letterFrequency(staph[[1]], letters =
+"ACGT", OR = 0)
+
+get a matrix of bases frequency: letterFrq = vapply(staph,
+letterFrequency, FUN.VALUE = numeric(4), letters = "ACGT", OR = 0)
+tab10= letterFrq[, 1:10] computeProportions = function(x) {x/sum(x)}
+prop10 = apply(tab10, 2, computeProportions) round(prop10, digits = 2)
+
+sum of a column: cs = colSums(tab10)
+
+intermezzo quantile: quantile(simulstat, qs)
+
+QQ_plots: qqplot(qchisq(ppoints(B), df = 30), simulstat, main ="", xlab
+= expression(chi[nu==30]\^2), asp = 1, cex = 0.5, pch = 16) abline(a =
+0, b = 1, col ="red") --\> faster and does not need the 1000 simulations
+
+Chargaff's Rule: -\> tetranucleotide hypothesis: wether the nucleotides
+occured at equal frequencies.
+
+load("../dat/ChargaffTable.RData") ChargaffTable
+
+Two categorical variables: -\> contingency table
+
+-\> checking a relationship in a model : chisq.test()
+
+Hardy-Weinberg equilibrium library("HardyWeinberg") data("mourant")
+Mourant[214:216,] -\> a table as the output
+
+maximum likelihood: (in Hardy-Weinberg equilibrium, using the
+HW-package) af(c(nMM, nMN, nNN))
+
+Visual comparison to the Hardy-Weinberg equilibrium:
+
+pops = c(1, 69, 128, 148, 192) genotypeFrequencies = as.matrix(Mourant[,
+c("MM", "MN", "NN")]) HWTernaryPlot(genotypeFrequencies[pops, ],
+markerlab = Mourant\$Country[pops], alpha = 0.0001, curvecols = c("red",
+rep("purple", 4)), mcex = 0.75, vertex.cex = 1)
+
+Kozak Motif: --\> sequence occurring close to start codon, but not
+equally likely
+
+library("seqLogo") load("../data/kozak.RDAta") kozak --\> a table as
+output
+
+for graphical visualization: sequence logo
+
+pwm = makePWM(kozak) seqLogo(pwn, ic.scale = FALSE)
+
+
+
+
+## Task 2
+
+
+
+## All plotting types in R:
+
+1, Histogram:
+
+hist(data, main = "topic", xlab = "xais", ylab = "yaix", (col = color,
+border = bordercolor))
+
+suitable for continuous data types visualize the distribution of a
+continuous variable
+
+2, density plot
+
+density(data, (main = "", xlab ="", col = color1))
+
+suitable for continuous data types visualize the distribution ofa
+variable by displaying its density
+
+3, line plot
+
+plot(a, b, type = "l")
+
+suitable for continuous data types visualize the trend of a continuous
+variable over time or some other variable
+
+4, scatter plot
+
+plot(a, b)
+
+suitable for continuous data types visualize the relationship between
+two variables
+
+5, box plot
+
+boxplot(value1 \~ value2 ( vector/formula ), data, notch, varwidth,
+names, main)
+
+suitable for continuous data types visualize the distribution of a
+continuous variable by displaying the quartiles
+
+6, bar plot
+
+barplot(y, names.arg = x)
+
+suitable for categorical data types compare the values
+
+7, heatmaps
+
+heatmap(data, scale = "none")
+
+use custom color set: col\<- colorRampPalette(c("red", "white",
+"blue"))(256)
+
+suitable for categorical data types visualize the relationship between
+two variables
+
+8, pie charts:
+
+pie(vector, labels, radius, main, col, clockwise)
+
+suitable for categorical data types display the proportion of each
+category in a categorical variable
+
+
+
+## how to choose xlab, ylab, title and configure textsize, margin size and number of plots displayed:
+
+using following commands:
+
+xlab = "lables_of_values" ylab = "lables_of_values" main = "title"
+
+text size: cex = 1.5 margin size: par(mar = c(5, 4, 4, 2) + 0.1))
+display two plots side by side: par(mfrow = c(1,2))
+
+
+
+## what are the types of data:
+
+Qualitative Data Type: Nominal Ordinal
+
+Quantitative Data Type: Discrete Continuous
+
+Continuous - numeric data can have any value within a range. Examples
+include time, height and temperature. Discrete - numeric data that can
+only have certain values. Examples include shoe size, number of people
+in a room and the number of marks on a test. Categoric - the data are
+words. Examples include colour such as 'red' or 'blue', and how an
+object feels like, eg: 'rough' or 'smooth'.
+
+sources:
+<https://www.bbc.co.uk/bitesize/topics/zsg6m39/articles/zxkh6g8>
+
+
+
+## Recap 1: Gene expression
+
+--\> understanding impact of log transformation
+
+```{r echo=TRUE}
+
+# mean of each gene without log transformation
+meanX25_0_r1 <- mean(survey$X25_0_r1)
+meanX25_0_r2 <- mean(survey$X25_0_r2)
+meanX25_0_r3 <- mean(survey$X25_0_r3)
+meanX42_10_r1 <- mean(survey$X42_10_r1)
+meanX42_10_r2 <- mean(survey$X42_10_r2)
+meanX42_10_r3 <- mean(survey$X42_10_r3)
+meanX42_30_r1 <- mean(survey$X42_30_r1)
+meanX42_30_r2 <- mean(survey$X42_30_r2)
+meanX42_30_r3 <- mean(survey$X42_30_r3)
+
+cat("mean 0_r1 :", meanX25_0_r1)
+cat("mean 0_r2: " ,meanX25_0_r2)
+cat("mean 0_r3 : " ,meanX25_0_r3)
+cat("mean 10_r1: ", meanX42_10_r1)
+cat("mean 10_r2: ", meanX42_10_r2)
+cat("mean 10_r3: ", meanX42_10_r3)
+cat("mean 30_r1: ", meanX42_30_r1)
+cat("mean 30_r2: ", meanX42_30_r2)
+cat("mean 30_r3: ", meanX42_30_r3)
+
+
+#mean with log
+log_meanX25_0_r1 <- log(mean(survey$X25_0_r1))
+log_meanX25_0_r2 <- log(mean(survey$X25_0_r2))
+log_meanX25_0_r3 <- log(mean(survey$X25_0_r3))
+log_meanX42_10_r1 <- log(mean(survey$X42_10_r1))
+log_meanX42_10_r2 <- log(mean(survey$X42_10_r2))
+log_meanX42_10_r3 <- log(mean(survey$X42_10_r3))
+log_meanX42_30_r1 <- log(mean(survey$X42_30_r1))
+log_meanX42_30_r2 <- log(mean(survey$X42_30_r2))
+log_meanX42_30_r3 <- log(mean(survey$X42_30_r3))
+
+cat("log_mean 0_r1 :", log_meanX25_0_r1)
+cat("log_mean 0_r2: " ,log_meanX25_0_r2)
+cat("log_mean 0_r3 : " ,log_meanX25_0_r3)
+cat("log_mean 10_r1: ", log_meanX42_10_r1)
+cat("log_mean 10_r2: ", log_meanX42_10_r2)
+cat("log_mean 10_r3: ", log_meanX42_10_r3)
+cat("log_mean 30_r1: ", log_meanX42_30_r1)
+cat("log_mean 30_r2: ", log_meanX42_30_r2)
+cat("log_mean 30_r3: ", log_meanX42_30_r3)
+
+
+#Standard deviation without log transformation
+sd_X25_0_r1 <- sd(survey$X25_0_r1)
+sd_X25_0_r2 <- sd(survey$X25_0_r2)
+sd_X25_0_r3 <- sd(survey$X25_0_r3)
+sd_X42_10_r1 <- sd(survey$X42_10_r1)
+sd_X42_10_r2 <- sd(survey$X42_10_r2)
+sd_X42_10_r3 <- sd(survey$X42_10_r3)
+sd_X42_30_r1 <- sd(survey$X42_30_r1)
+sd_X42_30_r2 <- sd(survey$X42_30_r2)
+sd_X42_30_r3 <- sd(survey$X42_30_r3)
+
+cat("sd 0_r1 :", sd_X25_0_r1)
+cat("sd 0_r2: " ,sd_X25_0_r2)
+cat("sd 0_r3 : " ,sd_X25_0_r3)
+cat("sd 10_r1: ", sd_X42_10_r1)
+cat("sd 10_r2: ", sd_X42_10_r2)
+cat("sd 10_r3: ", sd_X42_10_r3)
+cat("sd 30_r1: ", sd_X42_30_r1)
+cat("sd 30_r2: ", sd_X42_30_r2)
+cat("sd 30_r3: ", sd_X42_30_r3)
+
+#SD with log transformation
+
+log_sd_X25_0_r1 <- log(sd(survey$X25_0_r1))
+log_sd_X25_0_r2 <- log(sd(survey$X25_0_r2))
+log_sd_X25_0_r3 <- log(sd(survey$X25_0_r3))
+log_sd_X42_10_r1 <-log(sd(survey$X42_10_r1))
+log_sd_X42_10_r2 <- log(sd(survey$X42_10_r2))
+log_sd_X42_10_r3 <- log(sd(survey$X42_10_r3))
+log_sd_X42_30_r1 <- log(sd(survey$X42_30_r1))
+log_sd_X42_30_r2 <- log(sd(survey$X42_30_r2))
+log_sd_X42_30_r3 <- log(sd(survey$X42_30_r3))
+
+cat("log_sd 0_r1 :", log_sd_X25_0_r1)
+cat("log_sd 0_r2: " ,log_sd_X25_0_r2)
+cat("log_sd 0_r3 : " ,log_sd_X25_0_r3)
+cat("log_sd 10_r1: ", log_sd_X42_10_r1)
+cat("log_sd 10_r2: ", log_sd_X42_10_r2)
+cat("log_sd 10_r3: ", log_sd_X42_10_r3)
+cat("log_sd 30_r1: ", log_sd_X42_30_r1)
+cat("log_sd 30_r2: ", log_sd_X42_30_r2)
+cat("log_sd 30_r3: ", log_sd_X42_30_r3)
+
+#Zusammenfassen 
+means<- c(meanX25_0_r1, meanX25_0_r2, meanX25_0_r3, meanX42_10_r1, meanX42_10_r2, meanX42_10_r3, meanX42_30_r1, meanX42_30_r2, meanX42_30_r3)
+sds<- c(sd_X25_0_r1, sd_X25_0_r2, sd_X25_0_r3, sd_X42_10_r1, sd_X42_10_r2, sd_X42_10_r3, sd_X42_30_r1, sd_X42_30_r2, sd_X42_30_r3)
+
+#Create Scatter plot without log transformation
+plot(means, sds, xlab= "Mean", ylab="SD")
+
+#Zusammenfassend mit Logarithmus
+means_log <- c(log_meanX25_0_r1, log_meanX25_0_r2, log_meanX25_0_r3, log_meanX42_10_r1, log_meanX42_10_r2, log_meanX42_10_r3, log_meanX42_30_r1, log_meanX42_30_r2, log_meanX42_30_r3)
+sds_log <- c(log_sd_X25_0_r1, log_sd_X25_0_r2, log_sd_X25_0_r3, log_sd_X42_10_r1, log_sd_X42_10_r2, log_sd_X42_10_r3, log_sd_X42_30_r1, log_sd_X42_30_r2, log_sd_X42_30_r3)
+
+#Create Scatter plot with log transformation
+plot(means_log, sds_log, xlab="Mean", ylab="SD")
+
+```
+
+```{r echo=TRUE}
+YF_data<- survey[survey$gene_id=="YFL014W",]
+
+show(YF_data)
+x<- c("0r1", "0r2", "0r3", "10r1", "10r2", "10r3", "30r1", "30r2", "30r3")
+y<- c(9, 86, 455, 1373, 1732, 2940, 6107, 13126, 9212)
+mycolors <- c("blue", "blue", "blue","turquoise",  "turquoise", "turquoise", "blue4", "blue4", "blue4")
+
+
+barplot(y, names.arg= x, 
+        args.legend = list(x = "topleft", bty="n"), col=mycolors, main="plot without log")
+
+barplot(log(y), names.arg= x, 
+        args.legend = list(x = "topleft", bty="n"), col=mycolors, main="plot with log")
+
+
+```
+
+# YFLO14W as line plot
+
+```{r echo=TRUE}
+x<- c(1,2,3)
+y<- c(mean(9, 86, 455), mean(1373, 1732, 2940), mean(6107, 13126, 9212))
+Llabels <- c("25", "42_10", "42_30")
+
+plot(x, y, type="l", main="plot without log")
+
+plot(x, log(y), type="l", main="plot with log")
+```
+
+#mean per gene per condition
+
+```{r echo=TRUE}
+mean_25 <- (survey$X25_0_r1 + survey$X25_0_r2 + survey$X25_0_r3)/3
+mean_42_10 <- (survey$X42_10_r1 + survey$X42_10_r2 + survey$X42_10_r3)/3
+mean_42_30 <- (survey$X42_30_r1 + survey$X42_30_r2 + survey$X42_30_r3)/3
+df_mean <- data.frame(gene_id=survey$gene_id,
+                 X25_0=mean_25,
+                 X42_10=mean_42_10,
+                 X42_30=mean_42_30)
+expression_of_0min <- df_mean$X25_0
+expression_of_10min <- df_mean$X42_10
+expression_of_30min <- df_mean$X42_30
+plot( expression_of_0min, expression_of_10min  ,  main="0min vs 10min, without log")
+plot( expression_of_10min, expression_of_30min  , main="10min vs 30min, without log")
+
+plot( log(expression_of_0min), log(expression_of_10min) , main="0min vs 10min, with log")
+plot( log(expression_of_10min), log(expression_of_30min)  ,  main="10min vs 30min, with log")
+
+```

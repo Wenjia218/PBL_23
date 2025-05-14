@@ -1,0 +1,76 @@
+---
+title: "plot"
+author: "Anna Lisa and Wenjia"
+date: "2023-06-29"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+heatshock <- read.delim("complex_yeast_heatshock.tsv")
+```
+
+```{r echo=TRUE}
+HSF1 <- 
+  heatshock %>% 
+  filter(`gene_id` == "YGL073W")
+HSF1_KO <- HSF1[, c(2,16,28,13,24,9,4,18,30,22,7,20,15,26,11)]
+#HSF1_KO <- log(HSF1_KO) + 1
+HSF1_KO <- rbind(HSF1_KO, colnames(HSF1_KO))
+HSF1_KO <- data.frame(t(HSF1_KO), stringsAsFactors = F)
+colnames(HSF1_KO) <- c( "values","conditions")
+rownames(HSF1_KO) <- c(1:15)
+HSF1_KO$values <- as.numeric(HSF1_KO$values)
+
+condition <- c("X25_0","X25_0","X25_0","X37_10","X37_10","X37_10","X37_30","X37_30","X37_30","X42_10","X42_10","X42_10","X42_30","X42_30","X42_30")
+g1 <- ggplot(HSF1_KO, aes(x = condition, y = values, fill = condition)) +
+  geom_violin() +
+  ggtitle("Overview gene YGL073W MSN24 KO") +
+  xlab("Conditions") +
+  ylab("Value") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+g1
+
+
+HSF1_WT <- HSF1[, c(32,46,58, 43,54,39, 44,56,40, 34,47,60, 53,38,51)]
+#HSF1_WT <- log(HSF1_WT) + 1
+HSF1_WT <- rbind(HSF1_WT, colnames(HSF1_WT))
+HSF1_WT <- data.frame(t(HSF1_WT), stringsAsFactors = F)
+colnames(HSF1_WT) <- c( "values","conditions")
+rownames(HSF1_WT) <- c(1:15)
+HSF1_WT$values <- as.numeric(HSF1_WT$values)
+g2 <- ggplot(HSF1_WT, aes(x = condition, y = values, fill = condition)) +
+  geom_violin() +
+  ggtitle("Overview gene YGL073W Wildtype") +
+  xlab("Conditions") +
+  ylab("values") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+g2
+
+HSF1_ND <- 
+  heatshock %>% 
+  filter(`gene_id` == "YGL073W") %>%
+  select(contains("HSF1.KD")) 
+HSF1_ND <- HSF1_ND[, c(6,3,14, 1,12,9, 2,8,15, 11,4,10, 7,13,5)]
+HSF1_ND <- rbind(HSF1_ND, colnames(HSF1_ND))
+HSF1_ND <- data.frame(t(HSF1_ND), stringsAsFactors = F)
+colnames(HSF1_ND) <- c( "values","conditions")
+rownames(HSF1_ND) <- c(1:15)
+HSF1_ND$values <- as.numeric(HSF1_ND$values)
+g3 <- ggplot(HSF1_ND, aes(x = conditions, y = values, fill = condition)) +
+  geom_point() +
+  ggtitle("Overview gene YGL073W HSF1_ND") +
+  xlab("Conditions") +
+  ylab("values") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+g3
+
+
+# Arrange the two violin plots side by side
+library(gridExtra)
+combined_plots <- grid.arrange(g1, g2, ncol = 2)
+```
